@@ -1,0 +1,150 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@custom-variant dark (&:is(.dark *));
+
+:root {
+	--rosewater: #f2d5cf;
+	--flamingo: #efaeae;
+	--pink: #f4b8e4;
+	--mauve: #ca9ee6;
+	--red: #e78284;
+	--maroon: #ea999c;
+	--peach: #ef9f76;
+	--yellow: #e5c890;
+	--green: #a6d189;
+	--teal: #81c8be;
+	--sky: #99d1db;
+	--sapphire: #85c1dc;
+	--blue: #8caaee;
+	--lavender: #babbf1;
+	--text: #303446;
+	--subtext-1: #51576d;
+	--subtext-0: #626880;
+	--overlay-2: #737994;
+	--overlay-1: #838ba7;
+	--overlay-0: #949cbb;
+	--surface-2: #a5adce;
+	--surface-1: #b5bfe2;
+	--surface-0: #c6d0f5;
+	--base: #eff1f5;
+	--mantle: #fbfdff; /* #e6e9ef; */
+	--crust: #dce0e8;
+}
+
+.dark {
+	--rosewater: #eeafa3;
+	--flamingo: #ec8282;
+	--pink: #ed76cd;
+	--mauve: #a465f2;
+	--red: #f05d87;
+	--maroon: #e76379;
+	--peach: #f19f6b;
+	--yellow: #eabc57;
+	--green: #7feb75;
+	--teal: #4fe3cb;
+	--sky: #5ad2e7;
+	--sapphire: #57bbe9;
+	--blue: #5691ee;
+	--lavender: #7787eb;
+	--text: #e4e8f6;
+	--subtext-1: #d4daee;
+	--subtext-0: #a6adc8;
+	--overlay-2: #9399b2;
+	--overlay-1: #7f849c;
+	--overlay-0: #6c7086;
+	--surface-2: #585b70;
+	--surface-1: #45475a;
+	--surface-0: #313244;
+	--base: #1e1e2e;
+	--mantle: #151525;
+	--crust: #11111b;
+}
+
+/* for shadcn tailwind */
+@theme inline {
+	--radius-sm: 0.375rem;
+	--radius-md: 0.5rem;
+	--radius-lg: 0.625rem;
+	--radius-xl: 0.875;
+
+	--color-rosewater: var(--rosewater);
+	--color-flamingo: var(--flamingo);
+	--color-pink: var(--pink);
+	--color-mauve: var(--mauve);
+	--color-red: var(--red);
+	--color-maroon: var(--maroon);
+	--color-peach: var(--peach);
+	--color-yellow: var(--yellow);
+	--color-green: var(--green);
+	--color-teal: var(--teal);
+	--color-sky: var(--sky);
+	--color-sapphire: var(--sapphire);
+	--color-blue: var(--blue);
+	--color-lavender: var(--lavender);
+	--color-text: var(--text);
+	--color-subtext-1: var(--subtext-1);
+	--color-subtext-0: var(--subtext-0);
+	--color-overlay-2: var(--overlay-2);
+	--color-overlay-1: var(--overlay-1);
+	--color-overlay-0: var(--overlay-0);
+	--color-surface-2: var(--surface-2);
+	--color-surface-1: var(--surface-1);
+	--color-surface-0: var(--surface-0);
+	--color-base: var(--base);
+	--color-mantle: var(--mantle);
+	--color-crust: var(--crust);
+
+	--color-background: var(--base);
+	--color-foreground: var(--text);
+	--color-card: var(--mantle);
+	--color-card-foreground: var(--text);
+	--color-popover: var(--base);
+	--color-popover-foreground: var(--text);
+	--color-primary: var(--lavender);
+	--color-primary-foreground: var(--base);
+	--color-secondary: var(--surface-1);
+	--color-secondary-foreground: var(--text);
+	--color-muted: var(--surface-0);
+	--color-muted-foreground: var(--overlay-0);
+	--color-accent: var(--surface-0);
+	--color-accent-foreground: var(--text);
+	--color-destructive: var(--red);
+	--color-border: var(--surface-1);
+	--color-input: var(--surface-1);
+	--color-ring: var(--overlay-1);
+	--color-chart-1: var(--mauve);
+	--color-chart-2: var(--green);
+	--color-chart-3: var(--peach);
+	--color-chart-4: var(--sapphire);
+	--color-chart-5: var(--pink);
+	--color-sidebar: var(--mantle);
+	--color-sidebar-foreground: var(--text);
+	--color-sidebar-primary: var(--mauve);
+	--color-sidebar-primary-foreground: var(--base);
+	--color-sidebar-accent: var(--surface-1);
+	--color-sidebar-accent-foreground: var(--text);
+	--color-sidebar-border: var(--surface-1);
+	--color-sidebar-ring: var(--mauve);
+}
+
+/* ── Base layer ────────────────────────────────────────────────── */
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	body {
+		@apply bg-background text-foreground;
+		font-family:
+			-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji",
+			"Segoe UI Emoji", "Segoe UI Symbol";
+		font-size: 14px;
+		line-height: 1.5;
+	}
+	code,
+	pre,
+	.monaco-editor,
+	.cm-editor {
+		font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+	}
+}
