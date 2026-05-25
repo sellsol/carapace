@@ -19,5 +19,6 @@
 		"^(?:\\$lib/components/ui/.*|@lucide/svelte/.*)$"
 	],
 	"importOrderSeparation": true,
-	"importOrderSortSpecifiers": true
+	"importOrderSortSpecifiers": true,
+	"tabWidth": 4
 }
