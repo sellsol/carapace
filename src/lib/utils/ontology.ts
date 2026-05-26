@@ -1,10 +1,11 @@
-import type { Quad } from "n3";
-
-import { INFERRED_TYPES, OWL_NS, RDFS_NS, TYPE_PREDICATE } from "$lib/constants/namespaces";
-import { BUILTIN_DATATYPE, BUILTIN_NS_TO_PREFIX, BUILTIN_URI_TO_PROPERTY, XSD_NS } from "$lib/constants/namespaces";
+import {
+	BUILTIN_DATATYPE,
+	BUILTIN_INSTANCE,
+	BUILTIN_NS_TO_PREFIX,
+	BUILTIN_URI_TO_PROPERTY,
+	XSD_NS
+} from "$lib/constants/namespaces";
 import type { EntityType } from "$lib/types/graph";
-import type { GraphSettings } from "$lib/types/tabs";
-import { inHiddenNamespace } from "$lib/utils/settings";
 
 export function hasBuiltinPrefix(uri: string): boolean {
 	for (const ns of Object.keys(BUILTIN_NS_TO_PREFIX)) {
@@ -40,76 +41,8 @@ export function classifyUriType(uri: string): EntityType | null {
 	if (propertyType) return propertyType as EntityType;
 
 	if (uri.startsWith(XSD_NS) || BUILTIN_DATATYPE.has(uri)) return "datatype";
-	if (uri === OWL_NS + "NamedIndividual") return "instance";
+	if (BUILTIN_INSTANCE.has(uri)) return "instance";
 	if (hasBuiltinPrefix(uri)) return "class";
 
 	return null;
-}
-
-const TYPE_URI_TO_SUBJECT_TYPE: Record<string, EntityType> = {
-	[OWL_NS + "NamedIndividual"]: "instance",
-	[OWL_NS + "Thing"]: "instance",
-	[RDFS_NS + "Resource"]: "instance"
-};
-
-export function classifyTypesLocal(
-	triples: Quad[],
-	settings: GraphSettings,
-	uriToType: Map<string, EntityType>,
-	hiddenUris: Set<string>,
-	localUris: Set<string>,
-	inferredUris: Set<string>
-): void {
-	for (const quad of triples) {
-		const subjectUri = quad.subject.value;
-		const predicateUri = quad.predicate.value;
-		const objectUri = quad.object.value;
-
-		if (!TYPE_PREDICATE.has(predicateUri)) continue;
-
-		if (!hasBuiltinPrefix(subjectUri)) {
-			localUris.add(subjectUri);
-		}
-
-		const objectType = TYPE_URI_TO_SUBJECT_TYPE[objectUri] ?? classifyUriType(objectUri);
-		if (objectType) {
-			uriToType.set(subjectUri, objectType);
-		} else {
-			uriToType.set(subjectUri, "instance");
-			if (!uriToType.has(objectUri)) {
-				uriToType.set(objectUri, "class");
-				inferredUris.add(objectUri);
-			}
-		}
-
-		if (settings.hiddenInstanceOfUris.includes(objectUri)) {
-			hiddenUris.add(subjectUri);
-		}
-	}
-}
-
-export function classifyTypesInferred(
-	triples: Quad[],
-	settings: GraphSettings,
-	uriToType: Map<string, EntityType>,
-	hiddenUris: Set<string>,
-	inferredUris: Set<string>
-): void {
-	for (const quad of triples) {
-		const mapping = INFERRED_TYPES.get(quad.predicate.value);
-		if (!mapping) continue;
-		if (quad.subject.termType === "BlankNode" || quad.object.termType === "BlankNode") continue;
-
-		const subj = quad.subject.value;
-		if (!uriToType.has(subj) && !inHiddenNamespace(subj, settings.hiddenNamespaces) && !hiddenUris.has(subj)) {
-			uriToType.set(subj, classifyUriType(subj) ?? mapping.subjectType);
-			inferredUris.add(subj);
-		}
-
-		const obj = quad.object.value;
-		if (!uriToType.has(obj) && !inHiddenNamespace(obj, settings.hiddenNamespaces) && !hiddenUris.has(obj)) {
-			uriToType.set(obj, classifyUriType(obj) ?? mapping.objectType);
-			inferredUris.add(obj);
-		}
-	}
 }

@@ -20,7 +20,7 @@ export const BUILTIN_PREFIX_TO_NS: Record<string, string> = {
 	xsd: XSD_NS
 };
 
-export const BUILTIN_URI_TO_PROPERTY: Record<string, string> = {
+export const BUILTIN_URI_TO_PROPERTY: Record<string, EntityType> = {
 	[RDF_NS + "Property"]: "objectProperty",
 	[OWL_NS + "ObjectProperty"]: "objectProperty",
 	[OWL_NS + "DatatypeProperty"]: "dataProperty",
@@ -33,6 +33,8 @@ export const BUILTIN_URI_TO_PROPERTY: Record<string, string> = {
 	[OWL_NS + "IrreflexiveProperty"]: "objectProperty",
 	[OWL_NS + "OntologyProperty"]: "annotationProperty"
 };
+
+export const BUILTIN_INSTANCE: ReadonlySet<string> = new Set([OWL_NS + "NamedIndividual"]);
 
 export const BUILTIN_DATATYPE: ReadonlySet<string> = new Set([RDFS_NS + "Datatype"]);
 

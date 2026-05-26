@@ -1,6 +1,7 @@
 import type { Quad } from "n3";
 
 import { entityTypeLabel } from "$lib/constants/entity";
+import { BUILTIN_INSTANCE, INFERRED_TYPES, TYPE_PREDICATE } from "$lib/constants/namespaces";
 import {
 	CANVAS_HEIGHT,
 	CANVAS_WIDTH,
@@ -19,14 +20,7 @@ import {
 } from "$lib/constants/visualisation";
 import type { Edge, EntityType, Node } from "$lib/types/graph";
 import type { GraphSettings } from "$lib/types/tabs";
-import {
-	classifyTypesInferred,
-	classifyTypesLocal,
-	classifyUriType,
-	hasBuiltinPrefix,
-	resolveLocalName,
-	resolvePrefix
-} from "$lib/utils/ontology";
+import { classifyUriType, hasBuiltinPrefix, resolveLocalName, resolvePrefix } from "$lib/utils/ontology";
 import { inHiddenNamespace } from "$lib/utils/settings";
 
 let sharedCtx: CanvasRenderingContext2D | null = null;
@@ -121,7 +115,8 @@ function measureNodeDimensions(label: string, prefix: string | null, nodeType: E
 			? [firstLines[0], ...breakText(firstLines.slice(1).join(" "), availableWidthFull, ctx)]
 			: firstLines;
 
-	const height = NODE_HEADER_HEIGHT + NODE_CONTENT_PADDING_Y + bodyLines.length * NODE_LINE_HEIGHT + NODE_BORDER_WIDTH;
+	const height =
+		NODE_HEADER_HEIGHT + NODE_CONTENT_PADDING_Y + bodyLines.length * NODE_LINE_HEIGHT + NODE_BORDER_WIDTH;
 
 	return { width, height, bodyLines, badgeWidth };
 }
@@ -129,33 +124,89 @@ function measureNodeDimensions(label: string, prefix: string | null, nodeType: E
 class GraphBuilder {
 	uriToNode = new Map<string, Node>();
 	edges: Edge[] = [];
+
 	nodeIdCounter = 0;
 	literalIdCounter = 0;
 	externalIdCounter = 0;
+
 	settings: GraphSettings;
 	nsToPrefix: Record<string, string>;
 	uriToCoords: Map<string, { x: number; y: number }[]>;
-	uriToType: Map<string, EntityType>;
-	localUris: Set<string>;
-	inferredUris: Set<string>;
-	hiddenUris: Set<string>;
+	uriToType = new Map<string, EntityType>();
+	hiddenUris = new Set<string>();
+	localUris = new Set<string>();
+	inferredUris = new Set<string>();
 
 	constructor(
 		settings: GraphSettings,
 		nsToPrefix: Record<string, string>,
-		uriToCoords: Map<string, { x: number; y: number }[]>,
-		uriToType: Map<string, EntityType>,
-		localUris: Set<string>,
-		inferredUris: Set<string>,
-		hiddenUris: Set<string>
+		uriToCoords: Map<string, { x: number; y: number }[]>
 	) {
 		this.settings = settings;
 		this.nsToPrefix = nsToPrefix;
 		this.uriToCoords = uriToCoords;
-		this.uriToType = uriToType;
-		this.localUris = localUris;
-		this.inferredUris = inferredUris;
-		this.hiddenUris = hiddenUris;
+	}
+
+	classifyTriples(triples: Quad[]) {
+		for (const quad of triples) {
+			const subjectUri = quad.subject.value;
+			const predicateUri = quad.predicate.value;
+			const objectUri = quad.object.value;
+
+			if (TYPE_PREDICATE.has(predicateUri)) {
+				if (!hasBuiltinPrefix(subjectUri)) {
+					this.localUris.add(subjectUri);
+				}
+
+				const objectType = BUILTIN_INSTANCE.has(objectUri) ? "instance" : classifyUriType(objectUri);
+				if (objectType) {
+					this.uriToType.set(subjectUri, objectType);
+					this.inferredUris.delete(subjectUri);
+				} else {
+					this.uriToType.set(subjectUri, "instance");
+					this.inferredUris.delete(subjectUri);
+					if (!this.uriToType.has(objectUri)) {
+						this.uriToType.set(objectUri, "class");
+						this.inferredUris.add(objectUri);
+					}
+				}
+
+				if (this.settings.hiddenInstanceOfUris.includes(objectUri)) {
+					this.hiddenUris.add(subjectUri);
+				}
+			}
+
+			if (quad.subject.termType === "BlankNode" || quad.object.termType === "BlankNode") continue;
+
+			const inference = INFERRED_TYPES.get(predicateUri);
+			if (!inference) continue;
+
+			const subj = quad.subject.value;
+			if (
+				!this.uriToType.has(subj) &&
+				!inHiddenNamespace(subj, this.settings.hiddenNamespaces) &&
+				!this.hiddenUris.has(subj)
+			) {
+				this.uriToType.set(subj, classifyUriType(subj) ?? inference.subjectType);
+				this.inferredUris.add(subj);
+			}
+
+			const obj = quad.object.value;
+			if (
+				!this.uriToType.has(obj) &&
+				!inHiddenNamespace(obj, this.settings.hiddenNamespaces) &&
+				!this.hiddenUris.has(obj)
+			) {
+				this.uriToType.set(obj, classifyUriType(obj) ?? inference.objectType);
+				this.inferredUris.add(obj);
+			}
+		}
+
+		for (const [uri] of this.uriToType) {
+			if (hasBuiltinPrefix(uri)) {
+				this.inferredUris.add(uri);
+			}
+		}
 	}
 
 	makeNode(uri: string, label: string, prefix: string | null, nodeType: EntityType): Node {
@@ -258,13 +309,16 @@ class GraphBuilder {
 	}
 
 	build(triples: Quad[]): { nodes: Node[]; edges: Edge[] } {
+		this.classifyTriples(triples);
+
 		for (const quad of triples) {
 			const subjectUri = quad.subject.value;
 			const predicateUri = quad.predicate.value;
 
 			const subjectType = this.uriToType.get(subjectUri);
 			if (quad.subject.termType === "BlankNode") continue;
-			if (inHiddenNamespace(subjectUri, this.settings.hiddenNamespaces) || this.hiddenUris.has(subjectUri)) continue;
+			if (inHiddenNamespace(subjectUri, this.settings.hiddenNamespaces) || this.hiddenUris.has(subjectUri))
+				continue;
 			if (this.settings.hiddenEntityTypes.includes(subjectType ?? "class")) continue;
 
 			const sourceNode = this.addNode(subjectUri);
@@ -298,20 +352,6 @@ export function createGraphFromTriples(
 		uriToCoords.get(n.uri)!.push({ x: n.x, y: n.y });
 	}
 
-	const uriToType = new Map<string, EntityType>();
-	const hiddenUris = new Set<string>();
-	const localUris = new Set<string>();
-	const inferredUris = new Set<string>();
-
-	classifyTypesLocal(parsedTriples, settings, uriToType, hiddenUris, localUris, inferredUris);
-	classifyTypesInferred(parsedTriples, settings, uriToType, hiddenUris, inferredUris);
-
-	for (const [uri] of uriToType) {
-		if (hasBuiltinPrefix(uri)) {
-			inferredUris.add(uri);
-		}
-	}
-
-	const builder = new GraphBuilder(settings, nsToPrefix, uriToCoords, uriToType, localUris, inferredUris, hiddenUris);
+	const builder = new GraphBuilder(settings, nsToPrefix, uriToCoords);
 	return builder.build(parsedTriples);
 }
