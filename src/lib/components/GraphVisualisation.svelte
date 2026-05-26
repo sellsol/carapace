@@ -1,8 +1,6 @@
 <script lang="ts">
 	import GraphEdge from "$lib/components/GraphEdge.svelte";
 	import GraphNode from "$lib/components/GraphNode.svelte";
-	import type { Simulation, SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
-	import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from "d3-force";
 	import type { Quad } from "n3";
 	import { onDestroy, onMount } from "svelte";
 
@@ -10,18 +8,6 @@
 		CANVAS_HEIGHT,
 		CANVAS_WIDTH,
 		FIT_PADDING,
-		FORCE_ALPHA,
-		FORCE_ALPHA_DECAY,
-		FORCE_CHARGE_STRENGTH_BASE,
-		FORCE_CHARGE_STRENGTH_PER_NODE,
-		FORCE_COLLIDE_PADDING,
-		FORCE_LINK_DISTANCE_MIN,
-		FORCE_LINK_ITERATIONS,
-		FORCE_LINK_STRENGTH,
-		FORCE_X_Y_STRENGTH,
-		TICK_COUNT_MAX,
-		TICK_COUNT_MIN,
-		TICK_COUNT_PER_NODE,
 		ZOOM_BUTTON_FACTOR,
 		ZOOM_FIT_MAX,
 		ZOOM_MAX,
@@ -31,7 +17,7 @@
 	} from "$lib/constants/visualisation";
 	import { createLogger } from "$lib/logger";
 	import { tabsStore } from "$lib/stores/tabs.svelte";
-	import type { Edge, EntityType, Node } from "$lib/types/graph";
+	import type { Edge, Node } from "$lib/types/graph";
 	import type { GraphSettings } from "$lib/types/tabs";
 	import { exportSvgToFile } from "$lib/utils/export";
 	import { defaultGraphSettings, settingsHash } from "$lib/utils/settings";
@@ -62,26 +48,18 @@
 	let nodes = $state<Node[]>([]);
 	let edges = $state<Edge[]>([]);
 
-	let transform = $state({ x: 0, y: 0, k: 1 });
-	let triplesHash = "";
-	let layoutDone = false;
 	let currentTabId = "";
 	let positionLocked = $state(false);
+	let transform = $state({ x: 0, y: 0, k: 1 });
+
+	let triplesHash = "";
 	let appliedSettingsHash = "";
 	let settingsReady = false;
+	let layoutDone = false;
 	let lastReloadTrigger = 0;
-	let loadGeneration = 0;
 
-	function withLoadingOverlay(fn: () => Promise<void>) {
-		const gen = ++loadGeneration;
-		tabsStore.graphLoading = true;
-		setTimeout(async () => {
-			if (gen !== loadGeneration) return;
-			await fn();
-			if (gen !== loadGeneration) return;
-			tabsStore.graphLoading = false;
-		}, 0);
-	}
+	let layoutWorker: Worker | null = null;
+	let loadGeneration = 0;
 
 	function makeTriplesHash(t: Quad[]): string {
 		return JSON.stringify(t.map((q) => q.subject.value + q.predicate.value + q.object.value));
@@ -101,120 +79,67 @@
 		tabsStore.setActiveTabLocked(positionLocked);
 	}
 
-	onMount(() => {
-		currentTabId = tabsStore.activeTabId;
-		tabsStore.exportSvg = () => exportSvgToFile(svgEl, nodes, transform);
-		const resizeObserver = new ResizeObserver((entries) => {
-			for (const entry of entries) {
-				width = entry.contentRect.width;
-				height = entry.contentRect.height;
-			}
-		});
-		resizeObserver.observe(containerEl);
-
-		return () => {
-			resizeObserver.disconnect();
-		};
-	});
-
-	onDestroy(() => {
-		savePositions();
-		tabsStore.exportSvg = null;
-	});
-
-	interface D3Node extends SimulationNodeDatum {
-		id: string;
-		label: string;
-		nodeType: EntityType;
-		width: number;
-		height: number;
-	}
-
-	let simulation: Simulation<D3Node, undefined> | null = null;
-	function runForceLayoutAsync(): Promise<void> {
-		return new Promise((resolve) => {
+	function runLayoutInWorker(): Promise<void> {
+		return new Promise((resolve, reject) => {
 			if (nodes.length === 0) {
 				resolve();
 				return;
 			}
 
-			simulation?.stop();
-
-			const d3Nodes: D3Node[] = nodes.map((n) => ({
+			const serializedNodes = nodes.map((n) => ({
 				id: n.id,
-				label: n.label,
-				nodeType: n.nodeType,
 				width: n.width,
 				height: n.height,
-				x: n.x ?? Math.random() * width,
-				y: n.y ?? Math.random() * height
+				x: n.x,
+				y: n.y
 			}));
-			const d3Links: Array<SimulationLinkDatum<D3Node>> = edges.map((e) => ({
+			const serializedEdges = edges.map((e) => ({
 				id: e.id,
 				source: e.source.id,
 				target: e.target.id
 			}));
 
-			const n = d3Nodes.length;
-			simulation = forceSimulation(d3Nodes)
-				.alpha(FORCE_ALPHA)
-				.alphaDecay(FORCE_ALPHA_DECAY)
-				.force(
-					"link",
-					forceLink(d3Links)
-						.id((d: SimulationNodeDatum) => (d as D3Node).id)
-						.distance((l: SimulationLinkDatum<D3Node>) => {
-							const s = l.source as D3Node;
-							const t = l.target as D3Node;
-							return Math.max(FORCE_LINK_DISTANCE_MIN, (s.width + t.width) / 2);
-						})
-						.strength(FORCE_LINK_STRENGTH)
-						.iterations(FORCE_LINK_ITERATIONS)
-				)
-				.force(
-					"charge",
-					forceManyBody().strength(-Math.max(FORCE_CHARGE_STRENGTH_BASE, n * FORCE_CHARGE_STRENGTH_PER_NODE))
-				)
-				.force(
-					"collide",
-					forceCollide<D3Node>().radius((d) => Math.max(d.width, d.height) / 2 + FORCE_COLLIDE_PADDING)
-				)
-				.force("x", forceX(width / 2).strength(FORCE_X_Y_STRENGTH))
-				.force("y", forceY(height / 2).strength(FORCE_X_Y_STRENGTH));
-			simulation.stop();
+			const worker = new Worker(new URL("../workers/forceLayoutWorker.ts", import.meta.url), {
+				type: "module"
+			});
+			layoutWorker = worker;
 
-			const tickCount = Math.max(TICK_COUNT_MIN, Math.min(TICK_COUNT_MAX, n * TICK_COUNT_PER_NODE));
-			const CHUNK_SIZE = 70;
-			let tick = 0;
+			worker.onmessage = (e: MessageEvent) => {
+				const positions = e.data as Array<{ id: string; x: number; y: number }>;
+				const positionMap = new Map(positions.map((p) => [p.id, { x: p.x, y: p.y }]));
 
-			function doChunk() {
-				const end = Math.min(tick + CHUNK_SIZE, tickCount);
-				for (; tick < end; tick++) {
-					simulation!.tick();
-				}
-
-				if (tick < tickCount) {
-					requestAnimationFrame(doChunk);
-					return;
-				}
-
-				const positionMap = new Map(d3Nodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]));
 				const newNodes = nodes.map((n) => {
 					const pos = positionMap.get(n.id);
 					return pos ? { ...n, x: pos.x, y: pos.y } : n;
 				});
 				nodes = newNodes;
+
 				const nodeMap = new Map(newNodes.map((n) => [n.id, n]));
 				edges = edges.map((e) => ({
 					...e,
 					source: nodeMap.get(e.source.id)!,
 					target: nodeMap.get(e.target.id)!
 				}));
-				savePositions();
-				resolve();
-			}
 
-			requestAnimationFrame(doChunk);
+				layoutWorker = null;
+				worker.terminate();
+				resolve();
+			};
+
+			worker.onerror = (err) => {
+				logger.error("Layout worker error", err);
+
+				layoutWorker = null;
+				worker.terminate();
+				reject(err);
+			};
+
+			worker.postMessage({
+				nodes: serializedNodes,
+				edges: serializedEdges,
+				width,
+				height
+			});
 		});
 	}
 
@@ -222,6 +147,38 @@
 		const graph = createGraphFromTriples(triples, s, existingNodes, prefixMap);
 		nodes = graph.nodes;
 		edges = graph.edges;
+	}
+
+	function runLayoutPipeline(fn: (gen: number) => Promise<void>) {
+		const gen = ++loadGeneration;
+		tabsStore.graphLoading = true;
+
+		if (layoutWorker) {
+			layoutWorker.terminate();
+			layoutWorker = null;
+		}
+
+		requestAnimationFrame(async () => {
+			if (gen !== loadGeneration) return;
+
+			await fn(gen);
+			if (gen !== loadGeneration) return;
+
+			tabsStore.graphLoading = false;
+		});
+	}
+
+	async function runLayout(gen: number) {
+		if (!triples || triples.length === 0) return;
+		logger.debug("Graph Reloaded");
+
+		layoutDone = false;
+
+		buildGraph(tabsStore.getActiveTab()?.settings ?? defaultGraphSettings(), []);
+		await runLayoutInWorker();
+		if (gen !== loadGeneration) return;
+
+		layoutDone = true;
 	}
 
 	function handleNodeDrag(node: Node, event: MouseEvent) {
@@ -242,19 +199,30 @@
 		});
 	}
 
-	async function rebuildGraph(source: string) {
-		if (!triples || triples.length === 0) return;
+	onMount(() => {
+		currentTabId = tabsStore.activeTabId;
+		tabsStore.exportSvg = () => exportSvgToFile(svgEl, nodes, transform);
+		const resizeObserver = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				width = entry.contentRect.width;
+				height = entry.contentRect.height;
+			}
+		});
+		resizeObserver.observe(containerEl);
 
-		logger.debug(`Graph Reloaded (${source})`);
+		return () => {
+			resizeObserver.disconnect();
+		};
+	});
 
-		layoutDone = false;
-
-		buildGraph(tabsStore.getActiveTab()?.settings ?? defaultGraphSettings(), []);
-		await runForceLayoutAsync();
-
-		layoutDone = true;
-		triplesHash = makeTriplesHash(triples);
-	}
+	onDestroy(() => {
+		if (layoutWorker) {
+			layoutWorker.terminate();
+			layoutWorker = null;
+		}
+		savePositions();
+		tabsStore.exportSvg = null;
+	});
 
 	$effect(() => {
 		if (reloadTrigger <= lastReloadTrigger) return;
@@ -262,7 +230,8 @@
 
 		if (tabsStore.getActiveTab()?.locked) return;
 
-		withLoadingOverlay(() => rebuildGraph("Manual"));
+		runLayoutPipeline((gen) => runLayout(gen));
+		triplesHash = makeTriplesHash(triples);
 	});
 
 	$effect(() => {
@@ -279,7 +248,7 @@
 		}
 		if (positionLocked) return;
 
-		withLoadingOverlay(() => rebuildGraph("settings"));
+		runLayoutPipeline((gen) => runLayout(gen));
 	});
 
 	$effect(() => {
@@ -296,6 +265,7 @@
 			nodes = [];
 			edges = [];
 			layoutDone = false;
+			tabsStore.graphLoading = false;
 			return;
 		}
 
@@ -315,19 +285,23 @@
 			existingNodes = [];
 		}
 
-		withLoadingOverlay(async () => {
+		runLayoutPipeline(async (gen) => {
 			buildGraph(s, existingNodes);
 
 			if (tab.locked) {
 				layoutDone = true;
 				savePositions();
-			} else if (layoutDone) {
-				savePositions();
-			} else {
-				await runForceLayoutAsync();
-				layoutDone = true;
-				savePositions();
+				return;
 			}
+			if (layoutDone) {
+				savePositions();
+				return;
+			}
+
+			await runLayoutInWorker();
+			if (gen !== loadGeneration) return;
+			layoutDone = true;
+			savePositions();
 		});
 	});
 
@@ -411,7 +385,7 @@
 		bind:this={svgEl}
 		{width}
 		{height}
-		class="w-full h-full"
+		class="w-full h-full {tabsStore.graphLoading ? 'invisible' : ''}"
 		role="presentation"
 		onwheel={handleWheel}
 		onmousedown={handleMouseDown}

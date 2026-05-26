@@ -12,13 +12,14 @@ const logger = createLogger("TabsStore");
 class TabsStore {
 	tabs = $state<Tab[]>([]);
 	activeTabId = $state<string>("");
-
 	activeTriples = $state<Quad[] | null>(null);
 	activePrefixMap = $state<Record<string, string>>({});
 	activeError = $state<string>("");
+
 	graphReloadCount = $state(0);
-	exportSvg = $state<(() => void) | null>(null);
 	graphLoading = $state(false);
+
+	exportSvg = $state<(() => void) | null>(null);
 
 	private saveTimeout: ReturnType<typeof setTimeout> | null = null;
 	private parseTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -173,32 +174,19 @@ class TabsStore {
 		}, 500);
 	}
 
-	private async doParse() {
+	private doParse() {
 		const tab = this.getActiveTab();
-		if (!tab) {
-			this.graphLoading = false;
-			return;
-		}
-
-		this.graphLoading = true;
-		await new Promise((resolve) => setTimeout(resolve, 0));
+		if (!tab) return;
 
 		const result = parseTurtle(tab.ttlContent);
 
 		this.activeError = result.parseError;
-		if (result.parseError && tab.parsedTriples) {
-			this.graphLoading = false;
-			return;
-		}
+		if (result.parseError && tab.parsedTriples) return;
 
 		tab.parsedTriples = result.triples;
 		this.activeTriples = result.triples;
 		tab.parsedPrefixMap = result.prefixMap;
 		this.activePrefixMap = result.prefixMap;
-
-		if (!result.triples || result.triples.length === 0) {
-			this.graphLoading = false;
-		}
 	}
 
 	updateActiveTabSettings(newSettings: Partial<GraphSettings>) {
@@ -212,6 +200,7 @@ class TabsStore {
 	setActiveTabLocked(locked: boolean) {
 		const tab = this.getActiveTab();
 		if (!tab) return;
+
 		tab.locked = locked;
 		this.scheduleSave();
 	}
@@ -233,7 +222,8 @@ class TabsStore {
 						| Array<{ id: string; x: number; y: number }>
 						| undefined;
 					tab.settings = {
-						duplicateExternalNodes: (gs.duplicateExternalNodes as boolean) ?? defaults.duplicateExternalNodes,
+						duplicateExternalNodes:
+							(gs.duplicateExternalNodes as boolean) ?? defaults.duplicateExternalNodes,
 						hiddenNamespaces: [...defaults.hiddenNamespaces],
 						hiddenEntityTypes: [...defaults.hiddenEntityTypes],
 						hiddenPredicateUris: [...defaults.hiddenPredicateUris],
@@ -268,6 +258,7 @@ class TabsStore {
 		const data = { tabs: this.tabs, activeTabId: this.activeTabId };
 		localStorage.setItem("carapace_tabs", JSON.stringify(data));
 		localStorage.setItem("carapace_activeTabId", this.activeTabId);
+
 		logger.debug("Tabs Saved to Storage");
 	}
 
