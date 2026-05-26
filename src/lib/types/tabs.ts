@@ -20,4 +20,5 @@ export type Tab = {
 	settings: GraphSettings;
 	locked: boolean;
 	nodePositions?: Array<{ id: string; x: number; y: number }>;
+	camera?: { x: number; y: number; k: number };
 };

@@ -143,7 +143,8 @@ class TabsStore {
 			id: crypto.randomUUID(),
 			name: `${tab.name} copy`,
 			settings: { ...tab.settings },
-			nodePositions: undefined
+			nodePositions: undefined,
+			camera: undefined
 		};
 
 		this.tabs.push(newTab);

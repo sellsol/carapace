@@ -50,7 +50,7 @@
 
 	let currentTabId = "";
 	let positionLocked = $state(false);
-	let transform = $state({ x: 0, y: 0, k: 1 });
+	let transform = $state(tabsStore.getActiveTab()?.camera ?? { x: 0, y: 0, k: 1 });
 
 	let triplesHash = "";
 	let appliedSettingsHash = "";
@@ -220,6 +220,10 @@
 			layoutWorker.terminate();
 			layoutWorker = null;
 		}
+
+		const tab = tabsStore.getTab(currentTabId);
+		if (tab) tab.camera = { ...transform };
+
 		savePositions();
 		tabsStore.exportSvg = null;
 	});
