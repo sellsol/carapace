@@ -5,7 +5,7 @@ export function defaultGraphSettings(): GraphSettings {
 	return {
 		duplicateExternalNodes: false,
 		hiddenNamespaces: [RDF_NS, RDFS_NS, OWL_NS, XSD_NS],
-		hiddenEntityTypes: [],
+		hiddenEntityTypes: ["blank"],
 		hiddenPredicateUris: [],
 		hiddenInstanceOfUris: [OWL_NS + "Ontology", OWL_NS + "Restriction", OWL_NS + "Axiom"]
 	};

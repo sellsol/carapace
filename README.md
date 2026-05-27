@@ -32,7 +32,9 @@ Nodes are automatically classified into the entity types: Class, Datatype, Objec
 
 ## Roadmap
 
-- **RDF/ XML Import:** Import RDF/ XML file as an alternative to TTL file import.
+- **Capability Catalogue:** Browser of pre-configured TTL content and visualisations that comprehensively cover RDF/TTL capabilities. For demonstration and behaviour documentation purposes.
 - **Lasso/ Box Select and Drag:** Allow multiple nodes to be selected and moved at once.
 - **Line to Node Sync:** Button to pan to node corresponding to current line in code editor.
+- **Rich Blank Nodes Rendering:** Various visualisation changes for patterns that are confusing to look at as blank nodes (RDF lists, OWL restrictions, etc.), such as additional node entity types, special shapes, colours or visual groupings that may provide more readability.
+- **RDF/ XML Import:** Import RDF/ XML file as an alternative to TTL file import.
 - **Setting Whitelists:** Alternative to current settings lists, allowing the user to whitelist instead of blacklist namespaces, predicates, etc.

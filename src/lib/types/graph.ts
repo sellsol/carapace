@@ -5,7 +5,8 @@ export type EntityType =
 	| "dataProperty"
 	| "annotationProperty"
 	| "instance"
-	| "literal";
+	| "literal"
+	| "blank";
 
 export type Node = {
 	id: string;

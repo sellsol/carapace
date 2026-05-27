@@ -47,54 +47,66 @@
 </script>
 
 <g transform="translate({node.x}, {node.y})" class={locked ? "drop-shadow-sm" : "cursor-move drop-shadow-sm"}>
-	<rect
-		width={node.width}
-		height={node.height}
-		rx="6"
-		style="fill: color-mix(in srgb, var(--{colour}) 15%, var(--mantle)); stroke: var(--{colour});"
-		stroke-width="1.5"
-		role="presentation"
-		onmousedown={handleMouseDown}
-	/>
-	<path
-		d="M 0 6 Q 0 0 6 0 L {node.width -
-			6} 0 Q {node.width} 0 {node.width} 6 L {node.width} {NODE_HEADER_HEIGHT} L 0 {NODE_HEADER_HEIGHT} Z"
-		style="fill: var(--{colour});"
-		pointer-events="none"
-	/>
-	<text
-		x="6"
-		y={headerTextY}
-		class="fill-white"
-		font-size={NODE_HEADER_FONT_SIZE}
-		font-weight="bold"
-		pointer-events="none">{label}</text
-	>
-	{#if node.prefix}
+	{#if node.nodeType === "blank"}
+		<circle
+			cx={node.width / 2}
+			cy={node.height / 2}
+			r={node.width / 2}
+			style="fill: color-mix(in srgb, var(--{colour}) 15%, var(--mantle)); stroke: var(--{colour});"
+			stroke-width="1.5"
+			role="presentation"
+			onmousedown={handleMouseDown}
+		/>
+	{:else}
 		<rect
-			x={contentInset}
-			y={badgeY}
-			width={node.badgeWidth}
-			height={badgeHeight}
-			rx="3"
+			width={node.width}
+			height={node.height}
+			rx="6"
+			style="fill: color-mix(in srgb, var(--{colour}) 15%, var(--mantle)); stroke: var(--{colour});"
+			stroke-width="1.5"
+			role="presentation"
+			onmousedown={handleMouseDown}
+		/>
+		<path
+			d="M 0 6 Q 0 0 6 0 L {node.width -
+				6} 0 Q {node.width} 0 {node.width} 6 L {node.width} {NODE_HEADER_HEIGHT} L 0 {NODE_HEADER_HEIGHT} Z"
 			style="fill: var(--{colour});"
 			pointer-events="none"
 		/>
 		<text
-			x={contentInset + NODE_BADGE_PADDING_X}
-			y={badgeTextY}
-			class="fill-white font-semibold"
-			font-size={NODE_BADGE_FONT_SIZE}
-			pointer-events="none">{node.prefix}</text
+			x="6"
+			y={headerTextY}
+			class="fill-white"
+			font-size={NODE_HEADER_FONT_SIZE}
+			font-weight="bold"
+			pointer-events="none">{label}</text
 		>
+		{#if node.prefix}
+			<rect
+				x={contentInset}
+				y={badgeY}
+				width={node.badgeWidth}
+				height={badgeHeight}
+				rx="3"
+				style="fill: var(--{colour});"
+				pointer-events="none"
+			/>
+			<text
+				x={contentInset + NODE_BADGE_PADDING_X}
+				y={badgeTextY}
+				class="fill-white font-semibold"
+				font-size={NODE_BADGE_FONT_SIZE}
+				pointer-events="none">{node.prefix}</text
+			>
+		{/if}
+		{#each node.bodyLines as line, i}
+			<text
+				x={i === 0 && node.prefix ? contentInset + node.badgeWidth + NODE_LABEL_GAP : contentInset}
+				y={getLabelY(i)}
+				class="fill-text"
+				font-size={NODE_BODY_FONT_SIZE}
+				pointer-events="none">{line}</text
+			>
+		{/each}
 	{/if}
-	{#each node.bodyLines as line, i}
-		<text
-			x={i === 0 && node.prefix ? contentInset + node.badgeWidth + NODE_LABEL_GAP : contentInset}
-			y={getLabelY(i)}
-			class="fill-text"
-			font-size={NODE_BODY_FONT_SIZE}
-			pointer-events="none">{line}</text
-		>
-	{/each}
 </g>

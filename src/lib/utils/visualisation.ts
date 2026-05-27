@@ -3,6 +3,7 @@ import type { Quad } from "n3";
 import { entityTypeLabel } from "$lib/constants/entity";
 import { BUILTIN_INSTANCE, INFERRED_TYPES, TYPE_PREDICATE } from "$lib/constants/namespaces";
 import {
+	BLANK_NODE_RADIUS,
 	CANVAS_HEIGHT,
 	CANVAS_WIDTH,
 	NODE_BADGE_FONT_SIZE,
@@ -241,6 +242,29 @@ class GraphBuilder {
 		return node;
 	}
 
+	addBlankNode(uri: string): Node {
+		if (this.uriToNode.has(uri)) return this.uriToNode.get(uri)!;
+
+		const pos = this.uriToCoords.get(uri)?.shift();
+		const diameter = BLANK_NODE_RADIUS * 2;
+		const node: Node = {
+			id: `node-${this.nodeIdCounter++}`,
+			uri,
+			label: "",
+			prefix: null,
+			nodeType: "blank",
+			inferred: false,
+			x: pos ? pos.x : Math.random() * CANVAS_WIDTH,
+			y: pos ? pos.y : Math.random() * CANVAS_HEIGHT,
+			width: diameter,
+			height: diameter,
+			bodyLines: [],
+			badgeWidth: 0
+		};
+		this.uriToNode.set(uri, node);
+		return node;
+	}
+
 	addEdge(sourceNode: Node, targetNode: Node, predicateUri: string, edgePrefix: string | null): void {
 		this.edges.push({
 			id: `edge-${this.edges.length}`,
@@ -249,6 +273,15 @@ class GraphBuilder {
 			label: resolveLocalName(predicateUri),
 			prefix: edgePrefix
 		});
+	}
+
+	buildBlankEdge(quad: Quad, sourceNode: Node, edgePrefix: string | null): void {
+		const predicateUri = quad.predicate.value;
+
+		if (this.settings.hiddenPredicateUris.includes(predicateUri)) return;
+
+		const targetNode = this.addBlankNode(quad.object.value);
+		this.addEdge(sourceNode, targetNode, predicateUri, edgePrefix);
 	}
 
 	buildLiteralEdge(quad: Quad, sourceNode: Node, edgePrefix: string | null): void {
@@ -314,18 +347,28 @@ class GraphBuilder {
 		for (const quad of triples) {
 			const subjectUri = quad.subject.value;
 			const predicateUri = quad.predicate.value;
-
 			const subjectType = this.uriToType.get(subjectUri);
-			if (quad.subject.termType === "BlankNode") continue;
+
+			if (
+				this.settings.hiddenEntityTypes.includes("blank") &&
+				(quad.subject.termType === "BlankNode" || quad.object.termType === "BlankNode")
+			)
+				continue;
 			if (inHiddenNamespace(subjectUri, this.settings.hiddenNamespaces) || this.hiddenUris.has(subjectUri))
 				continue;
 			if (this.settings.hiddenEntityTypes.includes(subjectType ?? "class")) continue;
 
-			const sourceNode = this.addNode(subjectUri);
+			let sourceNode: Node;
+			if (quad.subject.termType === "BlankNode") {
+				sourceNode = this.addBlankNode(subjectUri);
+			} else {
+				sourceNode = this.addNode(subjectUri);
+			}
+
 			const edgePrefix = resolvePrefix(predicateUri, this.nsToPrefix);
 
 			if (quad.object.termType === "BlankNode") {
-				continue;
+				this.buildBlankEdge(quad, sourceNode, edgePrefix);
 			} else if (quad.object.termType === "Literal") {
 				this.buildLiteralEdge(quad, sourceNode, edgePrefix);
 			} else {

@@ -19,6 +19,8 @@ export const NODE_BODY_FONT_SIZE = 13;
 export const NODE_BADGE_PADDING_X = 4;
 export const NODE_BADGE_FONT_SIZE = 10;
 
+export const BLANK_NODE_RADIUS = 6;
+
 export const ARROW_INSET = 2;
 export const ARROW_SIZE = 8;
 export const ARROW_WIDTH_FACTOR = 0.4;

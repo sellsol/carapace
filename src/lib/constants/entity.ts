@@ -8,7 +8,8 @@ export const ENTITY_TYPE_DISPLAY = [
 	{ type: "dataProperty", label: "Data Property" },
 	{ type: "annotationProperty", label: "Annotation Property" },
 	{ type: "instance", label: "Instance" },
-	{ type: "literal", label: "Literal" }
+	{ type: "literal", label: "Literal" },
+	{ type: "blank", label: "Blank" }
 ] as const satisfies readonly { type: EntityType; label: string }[];
 
 export const ENTITY_TYPE_LABELS: Record<EntityType, string> = Object.fromEntries(
@@ -22,7 +23,8 @@ export const ENTITY_TYPE_COLOURS: Record<EntityType, string> = {
 	dataProperty: "teal",
 	annotationProperty: "sky",
 	instance: "blue",
-	literal: "overlay-1"
+	literal: "overlay-1",
+	blank: "overlay-2"
 };
 
 export function entityTypeLabel(nodeType: EntityType, inferred: boolean): string {
