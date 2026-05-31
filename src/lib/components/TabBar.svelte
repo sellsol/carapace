@@ -164,103 +164,94 @@
 </script>
 
 <div class="border-b bg-base flex items-center px-2 py-1">
-	<Tabs.Root value={tabsStore.activeTabId} onValueChange={handleTabChange} class="flex-1">
-		<Tabs.List class="h-8 gap-1 bg-transparent p-0">
-			{#each tabsStore.tabs as tab, i (tab.id)}
-				<div class="relative flex">
-					{#if dropIndex === i}
-						<div class="absolute left-0 top-1 bottom-1 w-0.5 bg-primary z-10 rounded-full"></div>
-					{/if}
-					<Tabs.Trigger
-						value={tab.id}
-						draggable="true"
-						ondragstart={(e) => handleDragStart(e, tab.id)}
-						ondragover={(e) => handleDragOver(e, i)}
-						ondragleave={handleDragLeave}
-						ondrop={(e) => handleDrop(e, i)}
-						ondragend={handleDragEnd}
-						class="relative min-w-20 max-w-80 text-sm data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border data-[state=inactive]:bg-muted/30 data-[state=inactive]:hover:bg-muted/50 transition-colors {dragTabId ===
-						tab.id
-							? 'opacity-50'
-							: ''}"
-					>
-						{#if renamingTabId === tab.id}
-							<Input
-								bind:value={renameInput}
-								class="h-6 px-1 text-sm"
-								onclick={(e) => e.stopPropagation()}
-								onkeydown={(e) => {
-									if (e.key === "Enter") {
-										confirmRename();
-									} else if (e.key === "Escape") {
-										cancelRename();
-									}
-								}}
-								onblur={confirmRename}
-								autofocus
-							/>
-						{:else}
-							<div class="flex items-center overflow-hidden w-full" title={tab.name}>
-								<FileCode class="h-3 w-3 mr-1 shrink-0" />
-								<span class="truncate">{tab.name}</span>
-							</div>
+	<div class="mr-auto flex">
+		<Tabs.Root value={tabsStore.activeTabId} onValueChange={handleTabChange} class="flex-1">
+			<Tabs.List class="h-8 gap-1 bg-transparent p-0">
+				{#each tabsStore.tabs as tab, i (tab.id)}
+					<div class="relative flex">
+						{#if dropIndex === i}
+							<div class="absolute left-0 top-1 bottom-1 w-0.5 bg-primary z-10 rounded-full"></div>
 						{/if}
-
-						<div class="ml-auto flex items-center gap-1">
-							<DropdownMenu.Root>
-								<DropdownMenu.Trigger onclick={(e) => e.stopPropagation()}>
-									{#snippet child({ props })}
-										<div
-											{...props}
-											class="h-4 w-4 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md"
-										>
-											<MoreVertical />
-										</div>
-									{/snippet}
-								</DropdownMenu.Trigger>
-								<DropdownMenu.Content align="end">
-									<DropdownMenu.Item onclick={() => startRename(tab.id)}>
-										<Edit2 />Rename
-									</DropdownMenu.Item>
-									<DropdownMenu.Item onclick={() => handleDuplicateTab(tab.id)}>
-										<Copy />Duplicate
-									</DropdownMenu.Item>
-								</DropdownMenu.Content>
-							</DropdownMenu.Root>
-
-							{#if tabsStore.tabs.length > 1}
-								<Button
-									variant="ghost"
-									size="icon"
-									class="h-4 w-4 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md"
-									onclick={(e) => handleCloseTab(e, tab.id)}
-								>
-									<X />
-								</Button>
+						<Tabs.Trigger
+							value={tab.id}
+							draggable="true"
+							ondragstart={(e) => handleDragStart(e, tab.id)}
+							ondragover={(e) => handleDragOver(e, i)}
+							ondragleave={handleDragLeave}
+							ondrop={(e) => handleDrop(e, i)}
+							ondragend={handleDragEnd}
+							class="relative min-w-20 max-w-80 text-sm data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border data-[state=inactive]:bg-muted/30 data-[state=inactive]:hover:bg-muted/50 transition-colors {dragTabId ===
+							tab.id
+								? 'opacity-50'
+								: ''}"
+						>
+							{#if renamingTabId === tab.id}
+								<Input
+									bind:value={renameInput}
+									class="h-6 px-1 text-sm"
+									onclick={(e) => e.stopPropagation()}
+									onkeydown={(e) => {
+										if (e.key === "Enter") {
+											confirmRename();
+										} else if (e.key === "Escape") {
+											cancelRename();
+										}
+									}}
+									onblur={confirmRename}
+									autofocus
+								/>
+							{:else}
+								<div class="flex items-center overflow-hidden w-full" title={tab.name}>
+									<FileCode class="h-3 w-3 mr-1 shrink-0" />
+									<span class="truncate">{tab.name}</span>
+								</div>
 							{/if}
-						</div>
-					</Tabs.Trigger>
-				</div>
-			{/each}
-			<div
-				role="none"
-				class="relative w-4 shrink-0"
-				ondragover={(e) => handleDragOver(e, tabsStore.tabs.length)}
-				ondragleave={handleDragLeave}
-				ondrop={(e) => handleDrop(e, tabsStore.tabs.length)}
-			>
-				{#if dropIndex === tabsStore.tabs.length}
-					<div class="absolute left-0 top-1 bottom-1 w-0.5 bg-primary z-10 rounded-full"></div>
-				{/if}
-			</div>
-		</Tabs.List>
-	</Tabs.Root>
 
-	<div class="ml-2 flex items-center gap-1">
-		<Button variant="ghost" size="icon" class="h-7 w-7" onclick={handleNewTab} title="New File">
+							<div class="ml-auto flex items-center gap-1">
+								<DropdownMenu.Root>
+									<DropdownMenu.Trigger onclick={(e) => e.stopPropagation()}>
+										{#snippet child({ props })}
+											<div
+												{...props}
+												class="h-4 w-4 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md"
+											>
+												<MoreVertical />
+											</div>
+										{/snippet}
+									</DropdownMenu.Trigger>
+									<DropdownMenu.Content align="end">
+										<DropdownMenu.Item onclick={() => startRename(tab.id)}>
+											<Edit2 />Rename
+										</DropdownMenu.Item>
+										<DropdownMenu.Item onclick={() => handleDuplicateTab(tab.id)}>
+											<Copy />Duplicate
+										</DropdownMenu.Item>
+									</DropdownMenu.Content>
+								</DropdownMenu.Root>
+
+								{#if tabsStore.tabs.length > 1}
+									<Button
+										variant="ghost"
+										size="icon"
+										class="h-4 w-4 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md"
+										onclick={(e) => handleCloseTab(e, tab.id)}
+									>
+										<X />
+									</Button>
+								{/if}
+							</div>
+						</Tabs.Trigger>
+					</div>
+				{/each}
+			</Tabs.List>
+		</Tabs.Root>
+
+		<Button variant="ghost" size="icon" class="h-8 w-8 ml-1" onclick={handleNewTab} title="New File">
 			<Plus />
 		</Button>
+	</div>
 
+	<div class="ml-2 flex items-center gap-1">
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger
 				class="inline-flex items-center justify-center rounded-md h-7 w-7 transition-colors hover:bg-muted"
