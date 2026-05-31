@@ -16,6 +16,7 @@
 	const logger = createLogger("app");
 	let editorValue = $state("");
 	let editorMode = $state<"code" | "settings">("code");
+	let isMobile = $state(false);
 
 	$effect(() => {
 		const tab = tabsStore.getActiveTab();
@@ -50,6 +51,7 @@
 	}
 
 	onMount(() => {
+		isMobile = window.innerWidth < 768;
 		tabsStore.loadFromStorage();
 		if (tabsStore.tabs.length === 0) {
 			tabsStore.addTab("File 1", SAMPLE_TURTLE);
@@ -57,61 +59,70 @@
 	});
 </script>
 
-<TabBar />
+{#if isMobile}
+	<div class="flex items-center justify-center p-8 h-full">
+		<div class="max-w-sm text-center">
+			<h2 class="text-2xl font-semibold mb-3 text-text">Desktop only</h2>
+			<p>Carapace does not currently support mobile screens. Please open it on a desktop or tablet.</p>
+		</div>
+	</div>
+{:else}
+	<TabBar />
 
-<Resizable.PaneGroup direction="horizontal" class="flex-1">
-	<Resizable.Pane defaultSize={30} minSize={20}>
-		<div class="h-full flex flex-col overflow-hidden">
-			<EditorToolbar
-				onclear={clearContent}
-				oncopy={copyContent}
-				onreload={() => tabsStore.graphReloadCount++}
-				settingsMode={editorMode === "settings"}
-				onToggleSettings={toggleSettings}
-			/>
-			<div class="flex-1 overflow-hidden">
-				{#key tabsStore.activeTabId + editorMode}
-					{#if editorMode === "code"}
-						<CodeEditor bind:value={editorValue} class="h-full w-full" />
-					{:else}
-						<GraphSettings />
+	<Resizable.PaneGroup direction="horizontal" class="flex-1">
+		<Resizable.Pane defaultSize={30} minSize={20}>
+			<div class="h-full flex flex-col overflow-hidden">
+				<EditorToolbar
+					onclear={clearContent}
+					oncopy={copyContent}
+					onreload={() => tabsStore.graphReloadCount++}
+					settingsMode={editorMode === "settings"}
+					onToggleSettings={toggleSettings}
+				/>
+				<div class="flex-1 overflow-hidden">
+					{#key tabsStore.activeTabId + editorMode}
+						{#if editorMode === "code"}
+							<CodeEditor bind:value={editorValue} class="h-full w-full" />
+						{:else}
+							<GraphSettings />
+						{/if}
+					{/key}
+				</div>
+			</div>
+		</Resizable.Pane>
+
+		<Resizable.Handle withHandle />
+
+		<Resizable.Pane defaultSize={50} minSize={20}>
+			<div class="h-full flex flex-1 flex-col overflow-hidden">
+				{#key tabsStore.activeTabId}
+					{#if tabsStore.activeTriples}
+						<GraphVisualisation
+							triples={tabsStore.activeTriples}
+							prefixMap={tabsStore.activePrefixMap}
+							reloadTrigger={tabsStore.graphReloadCount}
+							class="h-full"
+						/>
 					{/if}
 				{/key}
 			</div>
-		</div>
-	</Resizable.Pane>
+		</Resizable.Pane>
+	</Resizable.PaneGroup>
 
-	<Resizable.Handle withHandle />
-
-	<Resizable.Pane defaultSize={50} minSize={20}>
-		<div class="h-full flex flex-1 flex-col overflow-hidden">
-			{#key tabsStore.activeTabId}
-				{#if tabsStore.activeTriples}
-					<GraphVisualisation
-						triples={tabsStore.activeTriples}
-						prefixMap={tabsStore.activePrefixMap}
-						reloadTrigger={tabsStore.graphReloadCount}
-						class="h-full"
-					/>
-				{/if}
-			{/key}
-		</div>
-	</Resizable.Pane>
-</Resizable.PaneGroup>
-
-<footer class="h-8 border-t bg-card flex items-center justify-between px-4 text-sm text-muted-foreground">
-	<span>
-		{#if tabsStore.activeError}
-			<span class="text-destructive">{tabsStore.activeError}</span>
-		{:else if tabsStore.graphLoading}
-			<span>Graph Loading...</span>
-		{:else if tabsStore.activeTriples}
-			<span>Graph Loaded</span>
-		{:else}
-			<span>Ready</span>
+	<footer class="h-8 border-t bg-card flex items-center justify-between px-4 text-sm text-muted-foreground">
+		<span>
+			{#if tabsStore.activeError}
+				<span class="text-destructive">{tabsStore.activeError}</span>
+			{:else if tabsStore.graphLoading}
+				<span>Graph Loading...</span>
+			{:else if tabsStore.activeTriples}
+				<span>Graph Loaded</span>
+			{:else}
+				<span>Ready</span>
+			{/if}
+		</span>
+		{#if tabsStore.activeTriples}
+			<span class="tabular-nums">{tabsStore.activeNodeCount} nodes, {tabsStore.activeEdgeCount} edges</span>
 		{/if}
-	</span>
-	{#if tabsStore.activeTriples}
-		<span class="tabular-nums">{tabsStore.activeNodeCount} nodes, {tabsStore.activeEdgeCount} edges</span>
-	{/if}
-</footer>
+	</footer>
+{/if}
