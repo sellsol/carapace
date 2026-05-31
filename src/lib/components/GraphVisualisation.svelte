@@ -147,6 +147,8 @@
 		const graph = createGraphFromTriples(triples, s, existingNodes, prefixMap);
 		nodes = graph.nodes;
 		edges = graph.edges;
+		tabsStore.activeNodeCount = nodes.length;
+		tabsStore.activeEdgeCount = edges.length;
 	}
 
 	function runLayoutPipeline(fn: (gen: number) => Promise<void>) {

@@ -99,12 +99,19 @@
 	</Resizable.Pane>
 </Resizable.PaneGroup>
 
-<footer class="h-8 border-t bg-card flex items-center px-4 text-sm text-muted-foreground">
-	{#if tabsStore.activeError}
-		<span class="ml-4 text-destructive">{tabsStore.activeError}</span>
-	{:else if tabsStore.graphLoading}
-		<span>Graph Loading...</span>
-	{:else}
-		<span>Graph Loaded</span>
+<footer class="h-8 border-t bg-card flex items-center justify-between px-4 text-sm text-muted-foreground">
+	<span>
+		{#if tabsStore.activeError}
+			<span class="text-destructive">{tabsStore.activeError}</span>
+		{:else if tabsStore.graphLoading}
+			<span>Graph Loading...</span>
+		{:else if tabsStore.activeTriples}
+			<span>Graph Loaded</span>
+		{:else}
+			<span>Ready</span>
+		{/if}
+	</span>
+	{#if tabsStore.activeTriples}
+		<span class="tabular-nums">{tabsStore.activeNodeCount} nodes, {tabsStore.activeEdgeCount} edges</span>
 	{/if}
 </footer>

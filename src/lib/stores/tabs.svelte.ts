@@ -18,6 +18,8 @@ class TabsStore {
 
 	graphReloadCount = $state(0);
 	graphLoading = $state(false);
+	activeNodeCount = $state(0);
+	activeEdgeCount = $state(0);
 
 	exportSvg = $state<(() => void) | null>(null);
 
