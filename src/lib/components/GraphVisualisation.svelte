@@ -180,6 +180,7 @@
 		await runLayoutInWorker();
 		if (gen !== loadGeneration) return;
 
+		handleFitView();
 		layoutDone = true;
 	}
 
