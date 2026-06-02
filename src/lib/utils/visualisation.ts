@@ -291,7 +291,7 @@ class GraphBuilder {
 		if (this.settings.hiddenEntityTypes.includes("literal")) return;
 
 		const literalKey = `literal-${this.literalIdCounter++}`;
-		const literalNode = this.makeNode(quad.object.value, quad.object.value, null, "literal");
+		const literalNode = this.makeNode(literalKey, quad.object.value, null, "literal");
 		this.uriToNode.set(literalKey, literalNode);
 		this.addEdge(sourceNode, literalNode, predicateUri, edgePrefix);
 	}
