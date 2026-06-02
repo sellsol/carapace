@@ -29,16 +29,17 @@ export const EDGE_LABEL_FONT_SIZE = 11;
 // force and nav
 export const FORCE_ALPHA = 1;
 export const FORCE_ALPHA_DECAY = 0.008;
-export const FORCE_LINK_DISTANCE_MIN = 50;
-export const FORCE_LINK_STRENGTH = 0.08;
-export const FORCE_LINK_ITERATIONS = 4;
-export const FORCE_CHARGE_STRENGTH_BASE = 500;
-export const FORCE_CHARGE_STRENGTH_PER_NODE = 5;
+export const FORCE_LINK_DISTANCE_MIN = 60;
+export const FORCE_LINK_STRENGTH = 0.1;
+export const FORCE_LINK_ITERATIONS = 2;
+export const FORCE_CHARGE_STRENGTH_BASE = 80;
+export const FORCE_CHARGE_STRENGTH_PER_SQRT_DEGREE = 350;
 export const FORCE_COLLIDE_PADDING = 15;
-export const FORCE_X_Y_STRENGTH = 0.005;
-export const TICK_COUNT_MIN = 500;
-export const TICK_COUNT_MAX = 4000;
-export const TICK_COUNT_PER_NODE = 6;
+export const FORCE_INITIAL_RADIUS = 250;
+export const FORCE_COMPONENT_CENTERING_STRENGTH = 0.005;
+export const TICK_COUNT_MIN = 2000;
+export const TICK_COUNT_MAX = 8000;
+export const TICK_COUNT_PER_NODE = 12;
 
 export const ZOOM_MIN = 0.1;
 export const ZOOM_MAX = 5;
@@ -47,5 +48,3 @@ export const ZOOM_WHEEL_IN_FACTOR = 1.05;
 export const ZOOM_WHEEL_OUT_FACTOR = 0.95;
 export const ZOOM_FIT_MAX = 1;
 export const FIT_PADDING = 50;
-
-
