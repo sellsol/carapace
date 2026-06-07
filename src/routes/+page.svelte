@@ -18,19 +18,9 @@
 	let editorMode = $state<"code" | "settings">("code");
 	let isMobile = $state(false);
 
-	$effect(() => {
-		const tab = tabsStore.getActiveTab();
-		if (tab) {
-			editorValue = tab.ttlContent;
-		}
-	});
-
-	$effect(() => {
-		const tab = tabsStore.getActiveTab();
-		if (tab && editorValue !== tab.ttlContent) {
-			tabsStore.updateActiveTabContent(editorValue);
-		}
-	});
+	function toggleSettings() {
+		editorMode = editorMode === "code" ? "settings" : "code";
+	}
 
 	function clearContent() {
 		editorValue = "";
@@ -46,9 +36,23 @@
 		}
 	}
 
-	function toggleSettings() {
-		editorMode = editorMode === "code" ? "settings" : "code";
+	function handleUnload() {
+		tabsStore.flushSave();
 	}
+
+	$effect(() => {
+		const tab = tabsStore.getActiveTab();
+		if (tab) {
+			editorValue = tab.ttlContent;
+		}
+	});
+
+	$effect(() => {
+		const tab = tabsStore.getActiveTab();
+		if (tab && editorValue !== tab.ttlContent) {
+			tabsStore.updateActiveTabContent(editorValue);
+		}
+	});
 
 	onMount(() => {
 		isMobile = window.innerWidth < 768;
@@ -58,6 +62,8 @@
 		}
 	});
 </script>
+
+<svelte:window onbeforeunload={handleUnload} />
 
 {#if isMobile}
 	<div class="flex items-center justify-center p-8 h-full">

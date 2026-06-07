@@ -53,8 +53,9 @@
 	let currentTabId = "";
 
 	let triplesHash = "";
-	let settingsHash = "";
-	let settingsReady = false;
+	let settingsHash = makeSettingsHash(
+		tabsStore.getActiveTab()?.settings ?? defaultGraphSettings()
+	);
 	let layoutDone = false;
 	let lastReloadTrigger = 0;
 	let loadGeneration = 0;
@@ -96,6 +97,8 @@
 	}
 
 	function toggleLockMode() {
+		savePositions();
+
 		lockedMode = !lockedMode;
 		tabsStore.setActiveTabLocked(lockedMode);
 	}
@@ -251,7 +254,10 @@
 	}
 
 	function handleNodeDragEnd() {
+		savePositions();
+
 		selectedNodeStartPositions = new Map();
+		tabsStore.scheduleSave();
 	}
 
 	function handleZoomIn() {
@@ -382,10 +388,6 @@
 		if (hash === settingsHash) return;
 
 		settingsHash = hash;
-		if (!settingsReady) {
-			settingsReady = true;
-			return;
-		}
 		if (lockedMode) return;
 
 		runLayoutPipeline((gen) => rebuildLayout(gen));
@@ -458,6 +460,7 @@
 		if (tab) tab.camera = { ...transform };
 
 		savePositions();
+		tabsStore.flushSave();
 		tabsStore.exportSvg = null;
 	});
 </script>
