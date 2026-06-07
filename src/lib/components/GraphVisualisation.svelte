@@ -28,8 +28,10 @@
 	import Lock from "@lucide/svelte/icons/lock";
 	import LockOpen from "@lucide/svelte/icons/lock-open";
 	import Minus from "@lucide/svelte/icons/minus";
+	import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
 	import Plus from "@lucide/svelte/icons/plus";
 	import Scan from "@lucide/svelte/icons/scan";
+	import SquareMousePointer from "@lucide/svelte/icons/square-mouse-pointer";
 
 	interface Props {
 		triples: Quad[];
@@ -44,22 +46,26 @@
 	let svgEl: SVGSVGElement;
 	let width = $state(CANVAS_WIDTH);
 	let height = $state(CANVAS_HEIGHT);
+	let transform = $state(tabsStore.getActiveTab()?.camera ?? { x: 0, y: 0, k: 1 });
 
 	let nodes = $state<Node[]>([]);
 	let edges = $state<Edge[]>([]);
-
 	let currentTabId = "";
-	let positionLocked = $state(false);
-	let transform = $state(tabsStore.getActiveTab()?.camera ?? { x: 0, y: 0, k: 1 });
 
 	let triplesHash = "";
 	let appliedSettingsHash = "";
 	let settingsReady = false;
 	let layoutDone = false;
 	let lastReloadTrigger = 0;
+	let loadGeneration = 0;
 
 	let layoutWorker: Worker | null = null;
-	let loadGeneration = 0;
+
+	let lockedMode = $state(false);
+	let boxSelectMode = $state(false);
+	let boxSelectArea = $state<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
+	let selectedNodeIds = $state<Set<string>>(new Set());
+	let selectedNodeStartPositions = $state<Map<string, { x: number; y: number }>>(new Map());
 
 	function makeTriplesHash(t: Quad[]): string {
 		return JSON.stringify(t.map((q) => q.subject.value + q.predicate.value + q.object.value));
@@ -75,8 +81,8 @@
 	}
 
 	function toggleLock() {
-		positionLocked = !positionLocked;
-		tabsStore.setActiveTabLocked(positionLocked);
+		lockedMode = !lockedMode;
+		tabsStore.setActiveTabLocked(lockedMode);
 	}
 
 	function runLayoutInWorker(): Promise<void> {
@@ -145,6 +151,7 @@
 
 	function buildGraph(s: GraphSettings, existingNodes: Array<{ uri: string; x: number; y: number }>) {
 		const graph = createGraphFromTriples(triples, s, existingNodes, prefixMap);
+
 		nodes = graph.nodes;
 		edges = graph.edges;
 		tabsStore.activeNodeCount = nodes.length;
@@ -189,17 +196,71 @@
 		const mouseX = (event.clientX - rect.left - transform.x) / transform.k;
 		const mouseY = (event.clientY - rect.top - transform.y) / transform.k;
 
-		node.x = mouseX - node.width / 2;
-		node.y = mouseY - node.height / 2;
+		const start = selectedNodeStartPositions.get(node.id);
+		if (!start) return;
+
+		const dx = mouseX - node.width / 2 - start.x;
+		const dy = mouseY - node.height / 2 - start.y;
+
+		for (const [id, pos] of selectedNodeStartPositions) {
+			const n = nodes.find((n) => n.id === id);
+			if (n) {
+				n.x = pos.x + dx;
+				n.y = pos.y + dy;
+			}
+		}
 
 		edges = edges.map((e) => {
-			if (e.source.id !== node.id && e.target.id !== node.id) return e;
-			return {
-				...e,
-				source: e.source.id === node.id ? node : e.source,
-				target: e.target.id === node.id ? node : e.target
-			};
+			if (selectedNodeStartPositions.has(e.source.id) || selectedNodeStartPositions.has(e.target.id)) {
+				return {
+					...e,
+					source: nodes.find((n) => n.id === e.source.id)!,
+					target: nodes.find((n) => n.id === e.target.id)!
+				};
+			}
+			return e;
 		});
+	}
+
+	function handleNodeDragStart(node: Node, event: MouseEvent) {
+		if (event.ctrlKey || event.metaKey) {
+			const next = new Set(selectedNodeIds);
+			if (next.has(node.id)) next.delete(node.id);
+			else next.add(node.id);
+			selectedNodeIds = next;
+		} else if (!selectedNodeIds.has(node.id)) {
+			selectedNodeIds = new Set([node.id]);
+		}
+
+		selectedNodeStartPositions = new Map();
+		for (const id of selectedNodeIds) {
+			const n = nodes.find((n) => n.id === id);
+			if (n) selectedNodeStartPositions.set(id, { x: n.x, y: n.y });
+		}
+	}
+
+	function handleNodeDragEnd() {
+		selectedNodeStartPositions = new Map();
+	}
+
+	function finishBoxSelect(box: { x1: number; y1: number; x2: number; y2: number }) {
+		const x1 = Math.min(box.x1, box.x2);
+		const y1 = Math.min(box.y1, box.y2);
+		const x2 = Math.max(box.x1, box.x2);
+		const y2 = Math.max(box.y1, box.y2);
+
+		const next = new Set<string>();
+		for (const n of nodes) {
+			if (n.x < x2 && n.x + n.width > x1 && n.y < y2 && n.y + n.height > y1) {
+				next.add(n.id);
+			}
+		}
+		selectedNodeIds = next;
+	}
+
+	function toggleSelectMode() {
+		boxSelectMode = !boxSelectMode;
+		if (!boxSelectMode) boxSelectArea = null;
 	}
 
 	onMount(() => {
@@ -253,14 +314,14 @@
 			settingsReady = true;
 			return;
 		}
-		if (positionLocked) return;
+		if (lockedMode) return;
 
 		runLayoutPipeline((gen) => runLayout(gen));
 	});
 
 	$effect(() => {
 		const tab = tabsStore.getActiveTab();
-		if (tab) positionLocked = tab.locked;
+		if (tab) lockedMode = tab.locked;
 	});
 
 	$effect(() => {
@@ -280,7 +341,7 @@
 		if (!tab) return;
 
 		const s = tab.settings ?? defaultGraphSettings();
-		positionLocked = tab.locked;
+		lockedMode = tab.locked;
 		const pos = tab.nodePositions ?? [];
 
 		let existingNodes: Array<{ uri: string; x: number; y: number }>;
@@ -359,29 +420,62 @@
 		}
 	}
 
+	let dragStartX = 0;
+	let dragStartY = 0;
+	let dragStartTx = 0;
+	let dragStartTy = 0;
+
+	function onMouseMove(event: MouseEvent) {
+		if (boxSelectMode && boxSelectArea) {
+			const rect = containerEl.getBoundingClientRect();
+			boxSelectArea = {
+				...boxSelectArea,
+				x2: (event.clientX - rect.left - transform.x) / transform.k,
+				y2: (event.clientY - rect.top - transform.y) / transform.k
+			};
+		} else {
+			transform.x = dragStartTx + (event.clientX - dragStartX);
+			transform.y = dragStartTy + (event.clientY - dragStartY);
+		}
+	}
+
+	function onMouseUp(event: MouseEvent) {
+		const wasDragged = Math.abs(event.clientX - dragStartX) > 2 || Math.abs(event.clientY - dragStartY) > 2;
+
+		if (!wasDragged && boxSelectMode) {
+			selectedNodeIds = new Set();
+		} else if (wasDragged && boxSelectMode && boxSelectArea) {
+			finishBoxSelect(boxSelectArea);
+		}
+		boxSelectArea = null;
+		document.removeEventListener("mousemove", onMouseMove);
+		document.removeEventListener("mouseup", onMouseUp);
+	}
+
 	function handleMouseDown(event: MouseEvent) {
 		if (event.target !== event.currentTarget) return;
 
-		const startX = event.clientX;
-		const startY = event.clientY;
-		const startTx = transform.x;
-		const startTy = transform.y;
+		dragStartX = event.clientX;
+		dragStartY = event.clientY;
+		dragStartTx = transform.x;
+		dragStartTy = transform.y;
 
-		const onMove = (moveEvent: MouseEvent) => {
-			transform.x = startTx + (moveEvent.clientX - startX);
-			transform.y = startTy + (moveEvent.clientY - startY);
-		};
+		if (boxSelectMode) {
+			const rect = containerEl.getBoundingClientRect();
+			boxSelectArea = {
+				x1: (event.clientX - rect.left - transform.x) / transform.k,
+				y1: (event.clientY - rect.top - transform.y) / transform.k,
+				x2: (event.clientX - rect.left - transform.x) / transform.k,
+				y2: (event.clientY - rect.top - transform.y) / transform.k
+			};
+		}
 
-		const onUp = () => {
-			document.removeEventListener("mousemove", onMove);
-			document.removeEventListener("mouseup", onUp);
-		};
-		document.addEventListener("mousemove", onMove);
-		document.addEventListener("mouseup", onUp);
+		document.addEventListener("mousemove", onMouseMove);
+		document.addEventListener("mouseup", onMouseUp);
 	}
 </script>
 
-<div bind:this={containerEl} class="bg-mantle relative w-full h-full overflow-hidden {className}">
+<div bind:this={containerEl} class="bg-mantle relative w-full h-full overflow-hidden select-none {className}">
 	{#if tabsStore.graphLoading}
 		<div class="absolute inset-0 bg-base/75 flex items-center justify-center z-10 gap-1">
 			<Spinner />
@@ -392,18 +486,41 @@
 		bind:this={svgEl}
 		{width}
 		{height}
-		class="w-full h-full {tabsStore.graphLoading ? 'invisible' : ''}"
+		class="w-full h-full {boxSelectMode ? 'cursor-crosshair' : ''} {tabsStore.graphLoading ? 'invisible' : ''}"
 		role="presentation"
 		onwheel={handleWheel}
 		onmousedown={handleMouseDown}
+		oncontextmenu={(e) => e.preventDefault()}
 	>
 		<g transform="translate({transform.x}, {transform.y}) scale({transform.k})">
+			{#if boxSelectArea}
+				<rect
+					x={Math.min(boxSelectArea.x1, boxSelectArea.x2)}
+					y={Math.min(boxSelectArea.y1, boxSelectArea.y2)}
+					width={Math.abs(boxSelectArea.x2 - boxSelectArea.x1)}
+					height={Math.abs(boxSelectArea.y2 - boxSelectArea.y1)}
+					fill="var(--blue)"
+					fill-opacity="0.1"
+					stroke="var(--blue)"
+					stroke-width="1.5"
+					stroke-dasharray="4,2"
+					rx="6"
+					pointer-events="none"
+				/>
+			{/if}
 			{#each edges as edge (edge.id)}
 				<GraphEdge {edge} />
 			{/each}
 
 			{#each nodes as node (node.id)}
-				<GraphNode {node} locked={positionLocked} onDrag={handleNodeDrag} />
+				<GraphNode
+					{node}
+					locked={lockedMode}
+					selected={boxSelectMode && selectedNodeIds.has(node.id)}
+					onDrag={handleNodeDrag}
+					onDragStart={handleNodeDragStart}
+					onDragEnd={handleNodeDragEnd}
+				/>
 			{/each}
 		</g>
 	</svg>
@@ -412,11 +529,24 @@
 		<Button
 			variant="outline"
 			size="sm"
+			class="h-6 w-6 {boxSelectMode ? 'bg-blue/15 border-blue' : ''}"
+			onclick={toggleSelectMode}
+			aria-label={boxSelectMode ? "Switch to pan mode" : "Switch to select mode"}
+		>
+			{#if boxSelectMode}
+				<SquareMousePointer class="h-2.5 w-2.5" />
+			{:else}
+				<MousePointer2 class="h-2.5 w-2.5" />
+			{/if}
+		</Button>
+		<Button
+			variant="outline"
+			size="sm"
 			class="h-6 w-6"
 			onclick={toggleLock}
-			aria-label={positionLocked ? "Unlock graph" : "Lock graph"}
+			aria-label={lockedMode ? "Unlock graph" : "Lock graph"}
 		>
-			{#if positionLocked}
+			{#if lockedMode}
 				<Lock class="h-2.5 w-2.5" />
 			{:else}
 				<LockOpen class="h-2.5 w-2.5" />

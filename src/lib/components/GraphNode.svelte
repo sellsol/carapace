@@ -17,12 +17,16 @@
 	interface Props {
 		node: Node;
 		locked: boolean;
+		selected: boolean;
 		onDrag: (node: Node, event: MouseEvent) => void;
+		onDragStart: (node: Node, event: MouseEvent) => void;
+		onDragEnd: () => void;
 	}
-	const { node, locked, onDrag }: Props = $props();
+	const { node, locked, selected, onDrag, onDragStart, onDragEnd }: Props = $props();
 
 	const label = $derived(entityTypeLabel(node.nodeType, node.inferred));
 	const colour = $derived(node.inferred ? "yellow" : ENTITY_TYPE_COLOURS[node.nodeType]);
+
 	const contentInset = $derived(NODE_BORDER_WIDTH / 2 + NODE_CONTENT_PADDING_X / 2);
 	const headerTextY = $derived(NODE_HEADER_HEIGHT / 2 + NODE_HEADER_FONT_SIZE * 0.35);
 	const badgeHeight = $derived(NODE_BADGE_FONT_SIZE + 4);
@@ -33,14 +37,21 @@
 		return NODE_HEADER_HEIGHT + NODE_CONTENT_PADDING_Y + (i + 0.5) * NODE_LINE_HEIGHT + NODE_BODY_FONT_SIZE * 0.35;
 	}
 
-	function handleMouseDown() {
+	function onMove(event: MouseEvent) {
+		onDrag(node, event);
+	}
+
+	function onUp() {
+		document.removeEventListener("mousemove", onMove);
+		document.removeEventListener("mouseup", onUp);
+		onDragEnd();
+	}
+
+	function handleMouseDown(event: MouseEvent) {
 		if (locked) return;
 
-		const onMove = (moveEvent: MouseEvent) => onDrag(node, moveEvent);
-		const onUp = () => {
-			document.removeEventListener("mousemove", onMove);
-			document.removeEventListener("mouseup", onUp);
-		};
+		onDragStart(node, event);
+		if (event.ctrlKey || event.metaKey) event.preventDefault();
 		document.addEventListener("mousemove", onMove);
 		document.addEventListener("mouseup", onUp);
 	}
@@ -48,6 +59,18 @@
 
 <g transform="translate({node.x}, {node.y})" class={locked ? "drop-shadow-sm" : "cursor-move drop-shadow-sm"}>
 	{#if node.nodeType === "blank"}
+		{#if selected}
+			<circle
+				cx={node.width / 2}
+				cy={node.height / 2}
+				r={node.width / 2 + 4}
+				fill="none"
+				stroke="var(--blue)"
+				stroke-width="2"
+				stroke-dasharray="4,2"
+				pointer-events="none"
+			/>
+		{/if}
 		<circle
 			cx={node.width / 2}
 			cy={node.height / 2}
@@ -58,6 +81,20 @@
 			onmousedown={handleMouseDown}
 		/>
 	{:else}
+		{#if selected}
+			<rect
+				x={-4}
+				y={-4}
+				width={node.width + 8}
+				height={node.height + 8}
+				rx="8"
+				fill="none"
+				stroke="var(--blue)"
+				stroke-width="2"
+				stroke-dasharray="4,2"
+				pointer-events="none"
+			/>
+		{/if}
 		<rect
 			width={node.width}
 			height={node.height}
