@@ -20,8 +20,8 @@
 	import type { Edge, Node } from "$lib/types/graph";
 	import type { GraphSettings } from "$lib/types/tabs";
 	import { exportSvgToFile } from "$lib/utils/export";
-	import { defaultGraphSettings, settingsHash } from "$lib/utils/settings";
-	import { createGraphFromTriples } from "$lib/utils/visualisation";
+	import { defaultGraphSettings, makeSettingsHash } from "$lib/utils/settings";
+	import { createGraphFromTriples, makeTriplesHash } from "$lib/utils/visualisation";
 
 	import { Button } from "$lib/components/ui/button";
 	import { Spinner } from "$lib/components/ui/spinner";
@@ -53,7 +53,7 @@
 	let currentTabId = "";
 
 	let triplesHash = "";
-	let appliedSettingsHash = "";
+	let settingsHash = "";
 	let settingsReady = false;
 	let layoutDone = false;
 	let lastReloadTrigger = 0;
@@ -61,15 +61,16 @@
 
 	let layoutWorker: Worker | null = null;
 
-	let lockedMode = $state(false);
+	let lockedMode = $state(tabsStore.getActiveTab()?.locked ?? false);
 	let boxSelectMode = $state(false);
 	let boxSelectArea = $state<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 	let selectedNodeIds = $state<Set<string>>(new Set());
 	let selectedNodeStartPositions = $state<Map<string, { x: number; y: number }>>(new Map());
 
-	function makeTriplesHash(t: Quad[]): string {
-		return JSON.stringify(t.map((q) => q.subject.value + q.predicate.value + q.object.value));
-	}
+	let dragStartX = 0;
+	let dragStartY = 0;
+	let dragStartTx = 0;
+	let dragStartTy = 0;
 
 	function savePositions() {
 		if (!currentTabId) return;
@@ -80,56 +81,46 @@
 		tab.nodePositions = nodes.map((n) => ({ id: n.uri, x: n.x, y: n.y }));
 	}
 
-	function toggleLock() {
+	function getPositions(): Array<{ uri: string; x: number; y: number }> {
+		const tab = tabsStore.getActiveTab();
+		if (!tab) return [];
+
+		const nodePositions = tab.nodePositions ?? [];
+		if (tab.locked && nodePositions.length > 0) {
+			return nodePositions.map((p) => ({ uri: p.id, x: p.x, y: p.y }));
+		}
+		if (layoutDone) {
+			return nodes.map((n) => ({ uri: n.uri, x: n.x, y: n.y }));
+		}
+		return [];
+	}
+
+	function toggleLockMode() {
 		lockedMode = !lockedMode;
 		tabsStore.setActiveTabLocked(lockedMode);
 	}
 
-	function runLayoutInWorker(): Promise<void> {
+	function toggleSelectMode() {
+		boxSelectMode = !boxSelectMode;
+		if (!boxSelectMode) boxSelectArea = null;
+	}
+
+	function postToWorker(data: {
+		nodes: Array<{ id: string; width: number; height: number; x: number; y: number }>;
+		edges: Array<{ id: string; source: string; target: string }>;
+		width: number;
+		height: number;
+	}): Promise<Array<{ id: string; x: number; y: number }>> {
 		return new Promise((resolve, reject) => {
-			if (nodes.length === 0) {
-				resolve();
-				return;
-			}
-
-			const serializedNodes = nodes.map((n) => ({
-				id: n.id,
-				width: n.width,
-				height: n.height,
-				x: n.x,
-				y: n.y
-			}));
-			const serializedEdges = edges.map((e) => ({
-				id: e.id,
-				source: e.source.id,
-				target: e.target.id
-			}));
-
 			const worker = new Worker(new URL("../workers/forceLayoutWorker.ts", import.meta.url), {
 				type: "module"
 			});
 			layoutWorker = worker;
 
 			worker.onmessage = (e: MessageEvent) => {
-				const positions = e.data as Array<{ id: string; x: number; y: number }>;
-				const positionMap = new Map(positions.map((p) => [p.id, { x: p.x, y: p.y }]));
-
-				const newNodes = nodes.map((n) => {
-					const pos = positionMap.get(n.id);
-					return pos ? { ...n, x: pos.x, y: pos.y } : n;
-				});
-				nodes = newNodes;
-
-				const nodeMap = new Map(newNodes.map((n) => [n.id, n]));
-				edges = edges.map((e) => ({
-					...e,
-					source: nodeMap.get(e.source.id)!,
-					target: nodeMap.get(e.target.id)!
-				}));
-
 				layoutWorker = null;
 				worker.terminate();
-				resolve();
+				resolve(e.data);
 			};
 
 			worker.onerror = (err) => {
@@ -140,17 +131,37 @@
 				reject(err);
 			};
 
-			worker.postMessage({
-				nodes: serializedNodes,
-				edges: serializedEdges,
-				width,
-				height
-			});
+			worker.postMessage(data);
 		});
 	}
 
-	function buildGraph(s: GraphSettings, existingNodes: Array<{ uri: string; x: number; y: number }>) {
-		const graph = createGraphFromTriples(triples, s, existingNodes, prefixMap);
+	async function runLayoutWorker() {
+		if (nodes.length === 0) return;
+
+		const positions = await postToWorker({
+			nodes: nodes.map((n) => ({ id: n.id, width: n.width, height: n.height, x: n.x, y: n.y })),
+			edges: edges.map((e) => ({ id: e.id, source: e.source.id, target: e.target.id })),
+			width,
+			height
+		});
+		const positionMap = new Map(positions.map((p) => [p.id, { x: p.x, y: p.y }]));
+
+		const newNodes = nodes.map((n) => {
+			const position = positionMap.get(n.id);
+			return position ? { ...n, x: position.x, y: position.y } : n;
+		});
+		nodes = newNodes;
+
+		const nodeMap = new Map(newNodes.map((n) => [n.id, n]));
+		edges = edges.map((e) => ({
+			...e,
+			source: nodeMap.get(e.source.id)!,
+			target: nodeMap.get(e.target.id)!
+		}));
+	}
+
+	function buildGraph(settings: GraphSettings, nodePositions: Array<{ uri: string; x: number; y: number }>) {
+		const graph = createGraphFromTriples(triples, settings, nodePositions, prefixMap);
 
 		nodes = graph.nodes;
 		edges = graph.edges;
@@ -177,14 +188,13 @@
 		});
 	}
 
-	async function runLayout(gen: number) {
+	async function rebuildLayout(gen: number) {
 		if (!triples || triples.length === 0) return;
-		logger.debug("Graph Reloaded");
 
 		layoutDone = false;
 
 		buildGraph(tabsStore.getActiveTab()?.settings ?? defaultGraphSettings(), []);
-		await runLayoutInWorker();
+		await runLayoutWorker();
 		if (gen !== loadGeneration) return;
 
 		handleFitView();
@@ -202,11 +212,11 @@
 		const dx = mouseX - node.width / 2 - start.x;
 		const dy = mouseY - node.height / 2 - start.y;
 
-		for (const [id, pos] of selectedNodeStartPositions) {
+		for (const [id, position] of selectedNodeStartPositions) {
 			const n = nodes.find((n) => n.id === id);
 			if (n) {
-				n.x = pos.x + dx;
-				n.y = pos.y + dy;
+				n.x = position.x + dx;
+				n.y = position.y + dy;
 			}
 		}
 
@@ -227,6 +237,7 @@
 			const next = new Set(selectedNodeIds);
 			if (next.has(node.id)) next.delete(node.id);
 			else next.add(node.id);
+
 			selectedNodeIds = next;
 		} else if (!selectedNodeIds.has(node.id)) {
 			selectedNodeIds = new Set([node.id]);
@@ -243,136 +254,6 @@
 		selectedNodeStartPositions = new Map();
 	}
 
-	function finishBoxSelect(box: { x1: number; y1: number; x2: number; y2: number }) {
-		const x1 = Math.min(box.x1, box.x2);
-		const y1 = Math.min(box.y1, box.y2);
-		const x2 = Math.max(box.x1, box.x2);
-		const y2 = Math.max(box.y1, box.y2);
-
-		const next = new Set<string>();
-		for (const n of nodes) {
-			if (n.x < x2 && n.x + n.width > x1 && n.y < y2 && n.y + n.height > y1) {
-				next.add(n.id);
-			}
-		}
-		selectedNodeIds = next;
-	}
-
-	function toggleSelectMode() {
-		boxSelectMode = !boxSelectMode;
-		if (!boxSelectMode) boxSelectArea = null;
-	}
-
-	onMount(() => {
-		currentTabId = tabsStore.activeTabId;
-		tabsStore.exportSvg = () => exportSvgToFile(svgEl, nodes, transform);
-		const resizeObserver = new ResizeObserver((entries) => {
-			for (const entry of entries) {
-				width = entry.contentRect.width;
-				height = entry.contentRect.height;
-			}
-		});
-		resizeObserver.observe(containerEl);
-
-		return () => {
-			resizeObserver.disconnect();
-		};
-	});
-
-	onDestroy(() => {
-		if (layoutWorker) {
-			layoutWorker.terminate();
-			layoutWorker = null;
-		}
-
-		const tab = tabsStore.getTab(currentTabId);
-		if (tab) tab.camera = { ...transform };
-
-		savePositions();
-		tabsStore.exportSvg = null;
-	});
-
-	$effect(() => {
-		if (reloadTrigger <= lastReloadTrigger) return;
-		lastReloadTrigger = reloadTrigger;
-
-		if (tabsStore.getActiveTab()?.locked) return;
-
-		runLayoutPipeline((gen) => runLayout(gen));
-		triplesHash = makeTriplesHash(triples);
-	});
-
-	$effect(() => {
-		const tab = tabsStore.getActiveTab();
-		if (!tab) return;
-
-		const hash = settingsHash(tab.settings);
-		if (hash === appliedSettingsHash) return;
-
-		appliedSettingsHash = hash;
-		if (!settingsReady) {
-			settingsReady = true;
-			return;
-		}
-		if (lockedMode) return;
-
-		runLayoutPipeline((gen) => runLayout(gen));
-	});
-
-	$effect(() => {
-		const tab = tabsStore.getActiveTab();
-		if (tab) lockedMode = tab.locked;
-	});
-
-	$effect(() => {
-		const currentHash = triples ? makeTriplesHash(triples) : "";
-		if (currentHash === triplesHash) return;
-		triplesHash = currentHash;
-
-		if (!triples || triples.length === 0) {
-			nodes = [];
-			edges = [];
-			layoutDone = false;
-			tabsStore.graphLoading = false;
-			return;
-		}
-
-		const tab = tabsStore.getActiveTab();
-		if (!tab) return;
-
-		const s = tab.settings ?? defaultGraphSettings();
-		lockedMode = tab.locked;
-		const pos = tab.nodePositions ?? [];
-
-		let existingNodes: Array<{ uri: string; x: number; y: number }>;
-		if (tab.locked && pos.length > 0) {
-			existingNodes = pos.map((p) => ({ uri: p.id, x: p.x, y: p.y }));
-		} else if (layoutDone) {
-			existingNodes = nodes.map((n) => ({ uri: n.uri, x: n.x, y: n.y }));
-		} else {
-			existingNodes = [];
-		}
-
-		runLayoutPipeline(async (gen) => {
-			buildGraph(s, existingNodes);
-
-			if (tab.locked) {
-				layoutDone = true;
-				savePositions();
-				return;
-			}
-			if (layoutDone) {
-				savePositions();
-				return;
-			}
-
-			await runLayoutInWorker();
-			if (gen !== loadGeneration) return;
-			layoutDone = true;
-			savePositions();
-		});
-	});
-
 	function handleZoomIn() {
 		transform.k = Math.min(transform.k * ZOOM_BUTTON_FACTOR, ZOOM_MAX);
 	}
@@ -383,6 +264,7 @@
 
 	function handleFitView() {
 		if (nodes.length === 0) return;
+
 		const minX = Math.min(...nodes.map((n) => n.x)) - FIT_PADDING;
 		const maxX = Math.max(...nodes.map((n) => n.x + n.width)) + FIT_PADDING;
 		const minY = Math.min(...nodes.map((n) => n.y)) - FIT_PADDING;
@@ -392,6 +274,7 @@
 		const graphHeight = maxY - minY;
 		const scaleX = width / graphWidth;
 		const scaleY = height / graphHeight;
+
 		transform.k = Math.min(scaleX, scaleY, ZOOM_FIT_MAX);
 		transform.x = (width - graphWidth * transform.k) / 2 - minX * transform.k;
 		transform.y = (height - graphHeight * transform.k) / 2 - minY * transform.k;
@@ -420,12 +303,7 @@
 		}
 	}
 
-	let dragStartX = 0;
-	let dragStartY = 0;
-	let dragStartTx = 0;
-	let dragStartTy = 0;
-
-	function onMouseMove(event: MouseEvent) {
+	function handleMouseMove(event: MouseEvent) {
 		if (boxSelectMode && boxSelectArea) {
 			const rect = containerEl.getBoundingClientRect();
 			boxSelectArea = {
@@ -439,17 +317,30 @@
 		}
 	}
 
-	function onMouseUp(event: MouseEvent) {
-		const wasDragged = Math.abs(event.clientX - dragStartX) > 2 || Math.abs(event.clientY - dragStartY) > 2;
+	function handleMouseUp(event: MouseEvent) {
+		const dragged = Math.abs(event.clientX - dragStartX) > 2 || Math.abs(event.clientY - dragStartY) > 2;
 
-		if (!wasDragged && boxSelectMode) {
+		if (dragged && boxSelectMode && boxSelectArea) {
+			const x1 = Math.min(boxSelectArea.x1, boxSelectArea.x2);
+			const y1 = Math.min(boxSelectArea.y1, boxSelectArea.y2);
+			const x2 = Math.max(boxSelectArea.x1, boxSelectArea.x2);
+			const y2 = Math.max(boxSelectArea.y1, boxSelectArea.y2);
+
+			const next = new Set<string>();
+			for (const n of nodes) {
+				if (n.x < x2 && n.x + n.width > x1 && n.y < y2 && n.y + n.height > y1) {
+					next.add(n.id);
+				}
+			}
+
+			selectedNodeIds = next;
+		} else if (!dragged && boxSelectMode) {
 			selectedNodeIds = new Set();
-		} else if (wasDragged && boxSelectMode && boxSelectArea) {
-			finishBoxSelect(boxSelectArea);
 		}
+
 		boxSelectArea = null;
-		document.removeEventListener("mousemove", onMouseMove);
-		document.removeEventListener("mouseup", onMouseUp);
+		document.removeEventListener("mousemove", handleMouseMove);
+		document.removeEventListener("mouseup", handleMouseUp);
 	}
 
 	function handleMouseDown(event: MouseEvent) {
@@ -470,9 +361,105 @@
 			};
 		}
 
-		document.addEventListener("mousemove", onMouseMove);
-		document.addEventListener("mouseup", onMouseUp);
+		document.addEventListener("mousemove", handleMouseMove);
+		document.addEventListener("mouseup", handleMouseUp);
 	}
+
+	$effect(() => {
+		if (reloadTrigger <= lastReloadTrigger) return;
+		lastReloadTrigger = reloadTrigger;
+
+		if (tabsStore.getActiveTab()?.locked) return;
+
+		runLayoutPipeline((gen) => rebuildLayout(gen));
+	});
+
+	$effect(() => {
+		const tab = tabsStore.getActiveTab();
+		if (!tab) return;
+
+		const hash = makeSettingsHash(tab.settings);
+		if (hash === settingsHash) return;
+
+		settingsHash = hash;
+		if (!settingsReady) {
+			settingsReady = true;
+			return;
+		}
+		if (lockedMode) return;
+
+		runLayoutPipeline((gen) => rebuildLayout(gen));
+	});
+
+	$effect(() => {
+		const currentHash = triples ? makeTriplesHash(triples) : "";
+		if (currentHash === triplesHash) return;
+		triplesHash = currentHash;
+
+		if (!triples || triples.length === 0) {
+			nodes = [];
+			edges = [];
+			layoutDone = false;
+			tabsStore.graphLoading = false;
+			return;
+		}
+
+		const tab = tabsStore.getActiveTab();
+		if (!tab) return;
+
+		const settings = tab.settings ?? defaultGraphSettings();
+		const nodePositions = getPositions();
+
+		runLayoutPipeline(async (gen) => {
+			buildGraph(settings, nodePositions);
+
+			if (tab.locked) {
+				layoutDone = true;
+				savePositions();
+				return;
+			}
+			if (layoutDone) {
+				savePositions();
+				return;
+			}
+
+			await runLayoutWorker();
+			if (gen !== loadGeneration) return;
+
+			layoutDone = true;
+			savePositions();
+		});
+	});
+
+	onMount(() => {
+		currentTabId = tabsStore.activeTabId;
+		tabsStore.exportSvg = () => exportSvgToFile(svgEl, nodes, transform);
+
+		const resizeObserver = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				width = entry.contentRect.width;
+				height = entry.contentRect.height;
+			}
+		});
+		resizeObserver.observe(containerEl);
+
+		return () => {
+			resizeObserver.disconnect();
+		};
+	});
+
+	onDestroy(() => {
+		if (layoutWorker) {
+			layoutWorker.terminate();
+			layoutWorker = null;
+		}
+
+		const tab = tabsStore.getTab(currentTabId);
+		if (tab) tab.camera = { ...transform };
+
+		savePositions();
+		tabsStore.exportSvg = null;
+	});
 </script>
 
 <div bind:this={containerEl} class="bg-mantle relative w-full h-full overflow-hidden select-none {className}">
@@ -543,7 +530,7 @@
 			variant="outline"
 			size="sm"
 			class="h-6 w-6"
-			onclick={toggleLock}
+			onclick={toggleLockMode}
 			aria-label={lockedMode ? "Unlock graph" : "Lock graph"}
 		>
 			{#if lockedMode}

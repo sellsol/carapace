@@ -24,6 +24,10 @@ import type { GraphSettings } from "$lib/types/tabs";
 import { classifyUriType, hasBuiltinPrefix, resolveLocalName, resolvePrefix } from "$lib/utils/ontology";
 import { inHiddenNamespace } from "$lib/utils/settings";
 
+export function makeTriplesHash(t: Quad[]): string {
+	return JSON.stringify(t.map((q) => q.subject.value + q.predicate.value + q.object.value));
+}
+
 let sharedCtx: CanvasRenderingContext2D | null = null;
 function getSharedCtx(): CanvasRenderingContext2D | null {
 	if (typeof document === "undefined") return null;

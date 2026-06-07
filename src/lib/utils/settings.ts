@@ -18,7 +18,7 @@ export function inHiddenNamespace(uri: string, hiddenNamespaces: string[]): bool
 	return false;
 }
 
-export function settingsHash(s: GraphSettings): string {
+export function makeSettingsHash(s: GraphSettings): string {
 	return JSON.stringify([
 		s.hiddenNamespaces,
 		s.hiddenEntityTypes,

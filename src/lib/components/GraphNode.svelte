@@ -37,13 +37,13 @@
 		return NODE_HEADER_HEIGHT + NODE_CONTENT_PADDING_Y + (i + 0.5) * NODE_LINE_HEIGHT + NODE_BODY_FONT_SIZE * 0.35;
 	}
 
-	function onMove(event: MouseEvent) {
+	function handleMouseMove(event: MouseEvent) {
 		onDrag(node, event);
 	}
 
-	function onUp() {
-		document.removeEventListener("mousemove", onMove);
-		document.removeEventListener("mouseup", onUp);
+	function handleMouseUp() {
+		document.removeEventListener("mousemove", handleMouseMove);
+		document.removeEventListener("mouseup", handleMouseUp);
 		onDragEnd();
 	}
 
@@ -52,8 +52,8 @@
 
 		onDragStart(node, event);
 		if (event.ctrlKey || event.metaKey) event.preventDefault();
-		document.addEventListener("mousemove", onMove);
-		document.addEventListener("mouseup", onUp);
+		document.addEventListener("mousemove", handleMouseMove);
+		document.addEventListener("mouseup", handleMouseUp);
 	}
 </script>
 

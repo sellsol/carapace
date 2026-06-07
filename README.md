@@ -14,8 +14,7 @@ Nodes are automatically classified into the entity types: Class, Datatype, Objec
 - **Syntax Highlighting:** Turtle file syntax highlighting supported by Codemirror.
 - **Multiple Files:** Easily switch between multiple TTL files with independent graph settings.
 - **Session Persistence:** Tabs, settings, and node positions are saved to localStorage and restored on reload.
-- **Graph Controls:** Pan, zoom and scroll within the graph visualisation. Drag nodes to manually rearrange.
-- **Lock Positions:** Freeze node positions to maintain a manually arranged layout across tab switches.
+- **Graph Controls:** Pan, zoom and scroll within the graph visualisation. Drag nodes to manually rearrange. Box select or ctrl/cmd + click to move multiple nodes at once Lock node positions to maintain a manually arranged layout across tab switches.
 - **Fine-Grained Visualiser Settings:** Toggle visibility of nodes by entity types, and blacklist namespaces, predicates, or instances of types.
 - **External Node Handling:** Marks nodes from external vocabularies with distinct colours and node headers. Settings allow toggling of external nodes duplication for a cleaner graph.
 - **Export as CSV:** Export to a high-quality visualisation that fits to the graph's bounding box.
@@ -25,15 +24,13 @@ Nodes are automatically classified into the entity types: Class, Datatype, Objec
 ## Architecture
 
 - **Framework:** Svelte 5 and SvelteKit
-- **Graph:** D3.js Force Graph with some manual calculations and handling for optimised performance
+- **Graph:** D3.js Force Graph for layout calculations, with manual rendering
 - **Code Editor:** CodeMirror 6 with Turtle plugin and editor themes
 - **Turtle:** N3.js Turtle parser
 - **UI:** Shadcn-Svelte via Bits-UI, Paneforge for pane resizing, Svelte-Lucide for icons
 
 ## Roadmap
 
-- **Capability Catalogue:** Browser of pre-configured TTL content and visualisations that comprehensively cover RDF/TTL capabilities. For demonstration and behaviour documentation purposes.
-- **Lasso/ Box Select and Drag:** Allow multiple nodes to be selected and moved at once.
 - **Line to Node Sync:** Button to pan to node corresponding to current line in code editor.
 - **Rich Blank Nodes Rendering:** Various visualisation changes for patterns that are confusing to look at as blank nodes (RDF lists, OWL restrictions, etc.), such as additional node entity types, special shapes, colours or visual groupings that may provide more readability.
 - **RDF/ XML Import:** Import RDF/ XML file as an alternative to TTL file import.
