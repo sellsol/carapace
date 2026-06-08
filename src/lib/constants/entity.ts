@@ -23,7 +23,7 @@ export const ENTITY_TYPE_COLOURS: Record<EntityType, string> = {
 	dataProperty: "teal",
 	annotationProperty: "sky",
 	instance: "blue",
-	literal: "overlay-1",
+	literal: "overlay-0",
 	blank: "overlay-2"
 };
 

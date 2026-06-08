@@ -3,20 +3,16 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-	--rosewater: #f2d5cf;
-	--flamingo: #efaeae;
-	--pink: #f4b8e4;
-	--mauve: #ca9ee6;
-	--red: #e78284;
-	--maroon: #ea999c;
+	--flamingo: #e09393;
+	--mauve: #af70d5;
+	--red: #d87375;
 	--peach: #ef9f76;
-	--yellow: #e5c890;
-	--green: #a6d189;
-	--teal: #81c8be;
-	--sky: #99d1db;
-	--sapphire: #85c1dc;
-	--blue: #8caaee;
-	--lavender: #babbf1;
+	--yellow: #d7ab51;
+	--green: #9cca7d;
+	--teal: #70c7a1;
+	--sky: #76bac6;
+	--blue: #7c9ce5;
+	--lavender: #aeafe9;
 	--text: #303446;
 	--subtext-1: #51576d;
 	--subtext-0: #626880;
@@ -32,20 +28,16 @@
 }
 
 .dark {
-	--rosewater: #eeafa3;
-	--flamingo: #ec8282;
-	--pink: #ed76cd;
+	--flamingo: #c65b5b;
 	--mauve: #a465f2;
 	--red: #f05d87;
-	--maroon: #e76379;
-	--peach: #f19f6b;
-	--yellow: #eabc57;
-	--green: #7feb75;
-	--teal: #4fe3cb;
-	--sky: #5ad2e7;
-	--sapphire: #57bbe9;
-	--blue: #5691ee;
-	--lavender: #7787eb;
+	--peach: #df7f43;
+	--yellow: #d1a700;
+	--green: #70a84b;
+	--teal: #0e9878;
+	--sky: #0d8ea5;
+	--blue: #5087e0;
+	--lavender: #6f7ede;
 	--text: #e4e8f6;
 	--subtext-1: #d4daee;
 	--subtext-0: #a6adc8;
@@ -67,18 +59,14 @@
 	--radius-lg: 0.625rem;
 	--radius-xl: 0.875;
 
-	--color-rosewater: var(--rosewater);
 	--color-flamingo: var(--flamingo);
-	--color-pink: var(--pink);
 	--color-mauve: var(--mauve);
 	--color-red: var(--red);
-	--color-maroon: var(--maroon);
 	--color-peach: var(--peach);
 	--color-yellow: var(--yellow);
 	--color-green: var(--green);
 	--color-teal: var(--teal);
 	--color-sky: var(--sky);
-	--color-sapphire: var(--sapphire);
 	--color-blue: var(--blue);
 	--color-lavender: var(--lavender);
 	--color-text: var(--text);
@@ -115,8 +103,8 @@
 	--color-chart-1: var(--mauve);
 	--color-chart-2: var(--green);
 	--color-chart-3: var(--peach);
-	--color-chart-4: var(--sapphire);
-	--color-chart-5: var(--pink);
+	--color-chart-4: var(--sky);
+	--color-chart-5: var(--flamingo);
 	--color-sidebar: var(--mantle);
 	--color-sidebar-foreground: var(--text);
 	--color-sidebar-primary: var(--mauve);
