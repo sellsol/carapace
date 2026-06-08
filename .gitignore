@@ -12,6 +12,9 @@ node_modules
 .env.*
 !.env.sample
 
+# Pnpm
+.pnpm-store
+
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
