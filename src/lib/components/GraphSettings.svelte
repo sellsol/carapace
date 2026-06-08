@@ -10,12 +10,15 @@
 
 	import { Checkbox } from "$lib/components/ui/checkbox";
 	import { Input } from "$lib/components/ui/input";
+	import Lock from "@lucide/svelte/icons/lock";
 	import X from "@lucide/svelte/icons/x";
 
 	let newNamespace = $state("");
 	let newPredicate = $state("");
 	let newClassUri = $state("");
 	let settings = $state(defaultGraphSettings());
+
+	const lockedMode = $derived(tabsStore.getActiveTab()?.locked ?? false);
 
 	const allPrefixToUri = $derived<Record<string, string>>({
 		...BUILTIN_PREFIX_TO_NS,
@@ -121,21 +124,36 @@
 <div class="h-full overflow-y-auto p-4 text-sm text-text bg-base">
 	<div class="flex items-center justify-between mb-4">
 		<h2 class="text-lg font-semibold">Graph Settings</h2>
-		<button class="text-xs text-subtext-0 hover:text-text underline" onclick={resetDefaults}>
+		<button class="text-xs text-subtext-0 hover:text-text underline" onclick={resetDefaults} disabled={lockedMode}>
 			Reset to defaults
 		</button>
 	</div>
 
+	{#if lockedMode}
+		<div
+			class="flex items-center gap-2 rounded border border-yellow bg-yellow/30 p-3 mb-4 text-xs text-[color-mix(in_srgb,var(--color-yellow)_80%,black)]"
+		>
+			<Lock class="size-3.5 shrink-0" />
+			<span>Graph for this tab is locked — code and settings cannot be changed while locked.</span>
+		</div>
+	{/if}
+
 	<div class="space-y-1.5 mb-5 pb-4 border-b border-surface-0">
 		<h3 class="text-xs font-semibold text-subtext-0 uppercase tracking-wider mb-2">Special</h3>
 		<div
-			class="flex items-center gap-2 cursor-pointer"
+			class="flex items-center gap-2 enabled:cursor-pointer"
 			role="button"
 			tabindex="0"
-			onclick={() => update({ duplicateExternalNodes: !settings.duplicateExternalNodes })}
-			onkeydown={(e) => e.key === "Enter" && update({ duplicateExternalNodes: !settings.duplicateExternalNodes })}
+			onclick={() => {
+				if (lockedMode) return;
+				update({ duplicateExternalNodes: !settings.duplicateExternalNodes });
+			}}
+			onkeydown={(e) => {
+				if (lockedMode) return;
+				e.key === "Enter" && update({ duplicateExternalNodes: !settings.duplicateExternalNodes });
+			}}
 		>
-			<Checkbox checked={settings.duplicateExternalNodes} />
+			<Checkbox checked={settings.duplicateExternalNodes} disabled={lockedMode} />
 			<span class="select-none text-text">Duplicate externally defined nodes</span>
 		</div>
 		<!-- TODO: add back and sync to hidden predicate objects list -->
@@ -157,13 +175,19 @@
 		<div class="space-y-1.5">
 			{#each ENTITY_TYPE_DISPLAY as { type, label }}
 				<div
-					class="flex items-center gap-2 cursor-pointer"
+					class="flex items-center gap-2 enabled:cursor-pointer"
 					role="button"
 					tabindex="0"
-					onclick={() => toggleEntityType(type)}
-					onkeydown={(e) => e.key === "Enter" && toggleEntityType(type)}
+					onclick={() => {
+						if (lockedMode) return;
+						toggleEntityType(type);
+					}}
+					onkeydown={(e) => {
+						if (lockedMode) return;
+						e.key === "Enter" && toggleEntityType(type);
+					}}
 				>
-					<Checkbox checked={!settings.hiddenEntityTypes.includes(type)} />
+					<Checkbox checked={!settings.hiddenEntityTypes.includes(type)} disabled={lockedMode} />
 					<span class="select-none text-text">{label}</span>
 				</div>
 			{/each}
@@ -179,20 +203,30 @@
 				placeholder="http://example.org/ns#"
 				bind:value={newNamespace}
 				class="text-text h-7.5"
+				disabled={lockedMode}
 				onkeydown={(e) => {
+					if (lockedMode) return;
 					if (e.key === "Enter") addNamespace();
 				}}
 			/>
-			<Button size="sm" variant="default" class="text-xs bg-flamingo hover:bg-flamingo/80" onclick={addNamespace}
-				>Add</Button
+			<Button
+				size="sm"
+				variant="default"
+				class="text-xs bg-flamingo hover:bg-flamingo/80"
+				onclick={addNamespace}
+				disabled={lockedMode}>Add</Button
 			>
 		</div>
 		<div class="flex flex-wrap gap-1.5">
 			{#each settings.hiddenNamespaces as ns}
 				<span class="inline-flex items-center gap-1 bg-surface-0 text-subtext-0 rounded px-2 py-0.5 text-xs">
 					<span title={ns}>{shortLabel(ns)}</span>
-					<button class="hover:text-red cursor-pointer" onclick={() => removeNamespace(ns)}>
-						<X class="size-3" />
+					<button
+						class="enabled:hover:text-red enabled:cursor-pointer group"
+						disabled={lockedMode}
+						onclick={() => removeNamespace(ns)}
+					>
+						<X class="size-3 group-disabled:hidden" />
 					</button>
 				</span>
 			{/each}
@@ -208,20 +242,30 @@
 				placeholder="http://www.w3.org/2000/01/rdf-schema#label"
 				bind:value={newPredicate}
 				class="text-text h-7.5"
+				disabled={lockedMode}
 				onkeydown={(e) => {
+					if (lockedMode) return;
 					if (e.key === "Enter") addPredicate();
 				}}
 			/>
-			<Button size="sm" variant="default" class="text-xs bg-flamingo hover:bg-flamingo/80" onclick={addPredicate}
-				>Add</Button
+			<Button
+				size="sm"
+				variant="default"
+				class="text-xs bg-flamingo hover:bg-flamingo/80"
+				onclick={addPredicate}
+				disabled={lockedMode}>Add</Button
 			>
 		</div>
 		<div class="flex flex-wrap gap-1.5">
 			{#each settings.hiddenPredicateUris as uri}
 				<span class="inline-flex items-center gap-1 bg-surface-0 text-subtext-0 rounded px-2 py-0.5 text-xs">
 					<span title={uri}>{shortLabel(uri)}</span>
-					<button class="hover:text-red cursor-pointer" onclick={() => removePredicate(uri)}>
-						<X class="size-3" />
+					<button
+						class="enabled:hover:text-red enabled:cursor-pointer group"
+						disabled={lockedMode}
+						onclick={() => removePredicate(uri)}
+					>
+						<X class="size-3 group-disabled:hidden" />
 					</button>
 				</span>
 			{/each}
@@ -239,20 +283,30 @@
 				placeholder="http://www.w3.org/2002/07/owl#Ontology"
 				bind:value={newClassUri}
 				class="text-text h-7.5"
+				disabled={lockedMode}
 				onkeydown={(e) => {
+					if (lockedMode) return;
 					if (e.key === "Enter") addInstanceOfUri();
 				}}
 			/>
-			<Button size="sm" variant="default" class="text-xs bg-flamingo hover:bg-flamingo/80" onclick={addInstanceOfUri}
-				>Add</Button
+			<Button
+				size="sm"
+				variant="default"
+				class="text-xs bg-flamingo hover:bg-flamingo/80"
+				onclick={addInstanceOfUri}
+				disabled={lockedMode}>Add</Button
 			>
 		</div>
 		<div class="flex flex-wrap gap-1.5">
 			{#each settings.hiddenInstanceOfUris as uri}
 				<span class="inline-flex items-center gap-1 bg-surface-0 text-subtext-0 rounded px-2 py-0.5 text-xs">
 					<span title={uri}>{shortLabel(uri)}</span>
-					<button class="hover:text-red cursor-pointer" onclick={() => removeInstanceOfUri(uri)}>
-						<X class="size-3" />
+					<button
+						class="enabled:hover:text-red enabled:cursor-pointer group"
+						disabled={lockedMode}
+						onclick={() => removeInstanceOfUri(uri)}
+					>
+						<X class="size-3 group-disabled:hidden" />
 					</button>
 				</span>
 			{/each}

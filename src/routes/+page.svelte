@@ -17,6 +17,7 @@
 	let editorValue = $state("");
 	let editorMode = $state<"code" | "settings">("code");
 	let isMobile = $state(false);
+	let lockedMode = $derived(tabsStore.getActiveTab()?.locked ?? false);
 
 	function toggleSettings() {
 		editorMode = editorMode === "code" ? "settings" : "code";
@@ -79,6 +80,7 @@
 		<Resizable.Pane defaultSize={30} minSize={20}>
 			<div class="h-full flex flex-col overflow-hidden">
 				<EditorToolbar
+					{lockedMode}
 					onclear={clearContent}
 					oncopy={copyContent}
 					onreload={() => tabsStore.graphReloadCount++}
@@ -88,7 +90,7 @@
 				<div class="flex-1 overflow-hidden">
 					{#key tabsStore.activeTabId + editorMode}
 						{#if editorMode === "code"}
-							<CodeEditor bind:value={editorValue} class="h-full w-full" />
+							<CodeEditor bind:value={editorValue} {lockedMode} />
 						{:else}
 							<GraphSettings />
 						{/if}

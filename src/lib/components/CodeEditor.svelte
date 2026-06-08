@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { EditorState } from "@codemirror/state";
+	import { Compartment, EditorState } from "@codemirror/state";
 	import { catppuccinMocha } from "@fsegurai/codemirror-theme-catppuccin-mocha";
 	import { materialLight } from "@fsegurai/codemirror-theme-material-light";
 	import { EditorView, basicSetup } from "codemirror";
@@ -9,13 +9,14 @@
 
 	interface Props {
 		value: string;
-		class?: string;
+		lockedMode?: boolean;
 	}
-	let { value = $bindable(""), class: className = "" }: Props = $props();
+	let { value = $bindable(""), lockedMode = false }: Props = $props();
 
 	let editorElement: HTMLDivElement;
 	let editorView: EditorView;
 	let skipNextUpdate = false;
+	const editableCompartment = new Compartment();
 
 	const editorTheme = EditorView.theme({
 		"&": {
@@ -48,6 +49,7 @@
 			editorTheme
 		];
 		extensions.splice(2, 0, mode.current === "dark" ? catppuccinMocha : materialLight);
+		extensions.push(editableCompartment.of(EditorView.editable.of(!lockedMode)));
 
 		return extensions;
 	};
@@ -91,6 +93,14 @@
 	});
 
 	$effect(() => {
+		if (!editorView) return;
+
+		editorView.dispatch({
+			effects: editableCompartment.reconfigure(EditorView.editable.of(!lockedMode))
+		});
+	});
+
+	$effect(() => {
 		if (!editorElement || !editorView) return;
 
 		const currentMode = mode.current;
@@ -108,4 +118,8 @@
 	});
 </script>
 
-<div bind:this={editorElement} class="{className} overflow-hidden" style="display: flex; flex-direction: column;"></div>
+<div
+	bind:this={editorElement}
+	class="h-full w-full overflow-hidden"
+	style="display: flex; flex-direction: column;"
+></div>
