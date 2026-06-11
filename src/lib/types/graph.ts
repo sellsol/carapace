@@ -15,6 +15,7 @@ export type Node = {
 	prefix: string | null;
 	nodeType: EntityType;
 	inferred: boolean;
+	blank: boolean;
 	x: number;
 	y: number;
 	width: number;

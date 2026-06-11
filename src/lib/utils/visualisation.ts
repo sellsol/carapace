@@ -225,6 +225,7 @@ class GraphBuilder {
 			prefix,
 			nodeType,
 			inferred,
+			blank: false,
 			x: pos ? pos.x : Math.random() * CANVAS_WIDTH,
 			y: pos ? pos.y : Math.random() * CANVAS_HEIGHT,
 			width: dims.width,
@@ -250,6 +251,36 @@ class GraphBuilder {
 		if (this.uriToNode.has(uri)) return this.uriToNode.get(uri)!;
 
 		const pos = this.uriToCoords.get(uri)?.shift();
+
+		const blankType = this.uriToType.get(uri);
+		if (blankType) {
+			const ctx = getSharedCtx();
+			const headerText = entityTypeLabel(blankType, false); // needed here since it is the node width
+			let textW = NODE_MIN_WIDTH;
+			if (ctx) {
+				const headerFont = `bold ${NODE_HEADER_FONT_SIZE}px ${NODE_FONT_FAMILY}`;
+				ctx.font = headerFont;
+				textW = Math.ceil(ctx.measureText(headerText).width);
+			}
+			const node: Node = {
+				id: `node-${this.nodeIdCounter++}`,
+				uri,
+				label: "",
+				prefix: null,
+				nodeType: blankType,
+				inferred: false,
+				blank: true,
+				x: pos ? pos.x : Math.random() * CANVAS_WIDTH,
+				y: pos ? pos.y : Math.random() * CANVAS_HEIGHT,
+				width: textW + 8,
+				height: NODE_HEADER_HEIGHT + 2,
+				bodyLines: [],
+				badgeWidth: 0
+			};
+			this.uriToNode.set(uri, node);
+			return node;
+		}
+
 		const diameter = BLANK_NODE_RADIUS * 2;
 		const node: Node = {
 			id: `node-${this.nodeIdCounter++}`,
@@ -258,6 +289,7 @@ class GraphBuilder {
 			prefix: null,
 			nodeType: "blank",
 			inferred: false,
+			blank: true,
 			x: pos ? pos.x : Math.random() * CANVAS_WIDTH,
 			y: pos ? pos.y : Math.random() * CANVAS_HEIGHT,
 			width: diameter,
