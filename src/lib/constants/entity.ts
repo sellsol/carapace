@@ -27,6 +27,10 @@ export const ENTITY_TYPE_COLOURS: Record<EntityType, string> = {
 	blank: "overlay-2"
 };
 
-export function entityTypeLabel(nodeType: EntityType, inferred: boolean): string {
-	return inferred ? `${ENTITY_TYPE_LABELS[nodeType]} (EX)` : ENTITY_TYPE_LABELS[nodeType];
+export function entityTypeLabel(nodeType: EntityType, external: boolean): string {
+	return external ? `${ENTITY_TYPE_LABELS[nodeType]} (EX)` : ENTITY_TYPE_LABELS[nodeType];
+}
+
+export function entityTypeColour(nodeType: EntityType, external: boolean): string {
+	return external ? "yellow" : ENTITY_TYPE_COLOURS[nodeType];
 }

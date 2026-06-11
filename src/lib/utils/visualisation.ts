@@ -80,7 +80,7 @@ function breakText(text: string, maxWidth: number, ctx: CanvasRenderingContext2D
 }
 
 const NODE_FONT_FAMILY = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-function measureNodeDimensions(label: string, prefix: string | null, nodeType: EntityType, inferred: boolean) {
+function measureNodeDimensions(label: string, prefix: string | null, nodeType: EntityType, external: boolean) {
 	const ctx = getSharedCtx();
 	if (!ctx)
 		return {
@@ -94,7 +94,7 @@ function measureNodeDimensions(label: string, prefix: string | null, nodeType: E
 	const bodyFont = `${NODE_BODY_FONT_SIZE}px ${NODE_FONT_FAMILY}`;
 	const badgeFont = `${NODE_BADGE_FONT_SIZE}px ${NODE_FONT_FAMILY}`;
 
-	const headerText = entityTypeLabel(nodeType, inferred);
+	const headerText = entityTypeLabel(nodeType, external);
 	const headerWidth = measureCtxWidth(headerText, headerFont, ctx);
 
 	const badgeTextWidth = prefix ? measureCtxWidth(prefix, badgeFont, ctx) : 0;
@@ -140,7 +140,7 @@ class GraphBuilder {
 	uriToType = new Map<string, EntityType>();
 	hiddenUris = new Set<string>();
 	localUris = new Set<string>();
-	inferredUris = new Set<string>();
+	subjectUris = new Set<string>();
 
 	constructor(
 		settings: GraphSettings,
@@ -154,6 +154,7 @@ class GraphBuilder {
 
 	classifyTriples(triples: Quad[]) {
 		for (const quad of triples) {
+			this.subjectUris.add(quad.subject.value);
 			const subjectUri = quad.subject.value;
 			const predicateUri = quad.predicate.value;
 			const objectUri = quad.object.value;
@@ -166,13 +167,10 @@ class GraphBuilder {
 				const objectType = BUILTIN_INSTANCE.has(objectUri) ? "instance" : classifyUriType(objectUri);
 				if (objectType) {
 					this.uriToType.set(subjectUri, objectType);
-					this.inferredUris.delete(subjectUri);
 				} else {
 					this.uriToType.set(subjectUri, "instance");
-					this.inferredUris.delete(subjectUri);
 					if (!this.uriToType.has(objectUri)) {
 						this.uriToType.set(objectUri, "class");
-						this.inferredUris.add(objectUri);
 					}
 				}
 
@@ -193,7 +191,6 @@ class GraphBuilder {
 				!this.hiddenUris.has(subj)
 			) {
 				this.uriToType.set(subj, classifyUriType(subj) ?? inference.subjectType);
-				this.inferredUris.add(subj);
 			}
 
 			const obj = quad.object.value;
@@ -203,28 +200,20 @@ class GraphBuilder {
 				!this.hiddenUris.has(obj)
 			) {
 				this.uriToType.set(obj, classifyUriType(obj) ?? inference.objectType);
-				this.inferredUris.add(obj);
-			}
-		}
-
-		for (const [uri] of this.uriToType) {
-			if (hasBuiltinPrefix(uri)) {
-				this.inferredUris.add(uri);
 			}
 		}
 	}
 
 	makeNode(uri: string, label: string, prefix: string | null, nodeType: EntityType): Node {
 		const pos = this.uriToCoords.get(uri)?.shift();
-		const inferred = this.inferredUris.has(uri);
-		const dims = measureNodeDimensions(label, prefix, nodeType, inferred);
+		const dims = measureNodeDimensions(label, prefix, nodeType, false);
 		return {
 			id: `node-${this.nodeIdCounter++}`,
 			uri,
 			label,
 			prefix,
 			nodeType,
-			inferred,
+			external: false,
 			blank: false,
 			x: pos ? pos.x : Math.random() * CANVAS_WIDTH,
 			y: pos ? pos.y : Math.random() * CANVAS_HEIGHT,
@@ -239,9 +228,6 @@ class GraphBuilder {
 		if (this.uriToNode.has(uri)) return this.uriToNode.get(uri)!;
 
 		const type = this.uriToType.get(uri) || classifyUriType(uri) || "class";
-		if (!this.uriToType.has(uri) && hasBuiltinPrefix(uri)) {
-			this.inferredUris.add(uri);
-		}
 		const node = this.makeNode(uri, resolveLocalName(uri), resolvePrefix(uri, this.nsToPrefix), type);
 		this.uriToNode.set(uri, node);
 		return node;
@@ -268,7 +254,7 @@ class GraphBuilder {
 				label: "",
 				prefix: null,
 				nodeType: blankType,
-				inferred: false,
+				external: false,
 				blank: true,
 				x: pos ? pos.x : Math.random() * CANVAS_WIDTH,
 				y: pos ? pos.y : Math.random() * CANVAS_HEIGHT,
@@ -288,7 +274,7 @@ class GraphBuilder {
 			label: "",
 			prefix: null,
 			nodeType: "blank",
-			inferred: false,
+			external: false,
 			blank: true,
 			x: pos ? pos.x : Math.random() * CANVAS_WIDTH,
 			y: pos ? pos.y : Math.random() * CANVAS_HEIGHT,
@@ -348,7 +334,6 @@ class GraphBuilder {
 		let targetNode: Node;
 		if (shouldDuplicate) {
 			const targetKey = `ext-${this.externalIdCounter++}`;
-			this.inferredUris.add(objectUri);
 			const type = resolvedType || "class";
 			targetNode = this.makeNode(
 				objectUri,
@@ -360,9 +345,6 @@ class GraphBuilder {
 		} else {
 			if (!this.uriToNode.has(objectUri)) {
 				const type = resolvedType || "class";
-				if (!this.localUris.has(objectUri)) {
-					this.inferredUris.add(objectUri);
-				}
 				const node = this.makeNode(
 					objectUri,
 					resolveLocalName(objectUri),
@@ -409,6 +391,12 @@ class GraphBuilder {
 				this.buildLiteralEdge(quad, sourceNode, edgePrefix);
 			} else {
 				this.buildResourceEdge(quad, sourceNode, edgePrefix);
+			}
+		}
+
+		for (const node of this.uriToNode.values()) {
+			if (node.nodeType !== "literal" && !this.subjectUris.has(node.uri)) {
+				node.external = true;
 			}
 		}
 
