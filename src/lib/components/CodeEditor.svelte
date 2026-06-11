@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { indentWithTab } from "@codemirror/commands";
+	import { indentUnit } from "@codemirror/language";
 	import { Compartment, EditorState } from "@codemirror/state";
+	import { EditorView, keymap } from "@codemirror/view";
 	import { catppuccinMocha } from "@fsegurai/codemirror-theme-catppuccin-mocha";
 	import { materialLight } from "@fsegurai/codemirror-theme-material-light";
-	import { EditorView, basicSetup } from "codemirror";
+	import { basicSetup } from "codemirror";
 	import { turtle } from "codemirror-lang-turtle";
 	import { mode } from "mode-watcher";
 	import { onMount } from "svelte";
@@ -34,25 +37,33 @@
 		},
 		"&.cm-editor .cm-activeLine": {
 			border: "0px"
+		},
+		".cm-selectionBackground": {
+			outline: "none"
+		},
+		"&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
+			outline: "none"
 		}
 	});
 
-	const createExtensions = () => {
+	function createExtensions() {
 		const extensions = [
 			basicSetup,
+			editorTheme,
 			turtle(),
+			keymap.of([indentWithTab]),
+			indentUnit.of("    "),
 			EditorView.updateListener.of((update) => {
 				if (update.docChanged && !skipNextUpdate) {
 					value = update.state.doc.toString();
 				}
-			}),
-			editorTheme
+			})
 		];
 		extensions.splice(2, 0, mode.current === "dark" ? catppuccinMocha : materialLight);
 		extensions.push(editableCompartment.of(EditorView.editable.of(!lockedMode)));
 
 		return extensions;
-	};
+	}
 
 	onMount(() => {
 		const state = EditorState.create({
@@ -118,8 +129,4 @@
 	});
 </script>
 
-<div
-	bind:this={editorElement}
-	class="h-full w-full overflow-hidden"
-	style="display: flex; flex-direction: column;"
-></div>
+<div bind:this={editorElement} class="h-full w-full overflow-hidden flex flex-col"></div>

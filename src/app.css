@@ -7,7 +7,7 @@
 	--mauve: #af70d5;
 	--red: #d87375;
 	--peach: #ef9f76;
-	--yellow: #d7ab51;
+	--yellow: #ebb343;
 	--green: #9cca7d;
 	--teal: #70c7a1;
 	--sky: #76bac6;
@@ -31,10 +31,10 @@
 	--flamingo: #c65b5b;
 	--mauve: #a465f2;
 	--red: #f05d87;
-	--peach: #df7f43;
-	--yellow: #d1a700;
+	--peach: #e0854c;
+	--yellow: #deaf14;
 	--green: #70a84b;
-	--teal: #0e9878;
+	--teal: #0e9893;
 	--sky: #0d8ea5;
 	--blue: #5087e0;
 	--lavender: #6f7ede;
@@ -124,8 +124,8 @@
 	body {
 		@apply bg-background text-foreground;
 		font-family:
-			-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji",
-			"Segoe UI Emoji", "Segoe UI Symbol";
+			-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
+			"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 		font-size: 14px;
 		line-height: 1.5;
 	}
