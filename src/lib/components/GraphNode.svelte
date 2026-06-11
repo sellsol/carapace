@@ -80,6 +80,39 @@
 			role="presentation"
 			onmousedown={handleMouseDown}
 		/>
+	{:else if node.blank}
+		{#if selected}
+			<rect
+				x={-4}
+				y={-4}
+				width={node.width + 8}
+				height={node.height + 8}
+				rx="8"
+				fill="none"
+				stroke="var(--blue)"
+				stroke-width="2"
+				stroke-dasharray="4,2"
+				pointer-events="none"
+			/>
+		{/if}
+		<rect
+			width={node.width}
+			height={node.height}
+			rx={node.height / 2}
+			style="fill: color-mix(in srgb, var(--{colour}) 15%, var(--mantle)); stroke: var(--{colour});"
+			stroke-width="1.5"
+			role="presentation"
+			onmousedown={handleMouseDown}
+		/>
+		<text
+			x={node.width / 2}
+			y={node.height / 2 + NODE_HEADER_FONT_SIZE * 0.35}
+			text-anchor="middle"
+			style="fill: var(--{colour})"
+			class="font-semibold"
+			font-size={NODE_HEADER_FONT_SIZE}
+			pointer-events="none">{label}</text
+		>
 	{:else}
 		{#if selected}
 			<rect
