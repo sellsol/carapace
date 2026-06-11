@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ENTITY_TYPE_COLOURS, entityTypeLabel } from "$lib/constants/entity";
+	import { entityTypeColour, entityTypeLabel } from "$lib/constants/entity";
 	import {
 		NODE_BADGE_FONT_SIZE,
 		NODE_BADGE_PADDING_X,
@@ -24,8 +24,8 @@
 	}
 	const { node, locked, selected, onDrag, onDragStart, onDragEnd }: Props = $props();
 
-	const label = $derived(entityTypeLabel(node.nodeType, node.inferred));
-	const colour = $derived(node.inferred ? "yellow" : ENTITY_TYPE_COLOURS[node.nodeType]);
+	const label = $derived(entityTypeLabel(node.nodeType, node.external));
+	const colour = $derived(entityTypeColour(node.nodeType, node.external));
 
 	const contentInset = $derived(NODE_BORDER_WIDTH / 2 + NODE_CONTENT_PADDING_X / 2);
 	const headerTextY = $derived(NODE_HEADER_HEIGHT / 2 + NODE_HEADER_FONT_SIZE * 0.35);

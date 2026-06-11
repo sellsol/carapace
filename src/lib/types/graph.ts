@@ -14,7 +14,7 @@ export type Node = {
 	label: string;
 	prefix: string | null;
 	nodeType: EntityType;
-	inferred: boolean;
+	external: boolean;
 	blank: boolean;
 	x: number;
 	y: number;
