@@ -4,28 +4,19 @@ export const SAMPLE_TURTLE = `@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-sy
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:   <http://example.org/test#> .
 
-### -----------------------------------------------------------------
-### ONTOLOGY
-### -----------------------------------------------------------------
-
-ex:SampleOntology rdf:type owl:Ontology ;
+### ONTOLOGY DECLARATION
+<http://example.org/test> rdf:type owl:Ontology ;
     rdfs:label "Visualization Test Ontology" ;
     owl:versionInfo "1.0" .
 
-### -----------------------------------------------------------------
 ### CLASSES
-### -----------------------------------------------------------------
-
 ex:Employee rdf:type owl:Class ;
     rdfs:label "Employee" .
 
 ex:Department rdf:type owl:Class ;
     rdfs:label "Department" .
 
-### -----------------------------------------------------------------
-### PROPERTIES (Object, Data, Annotation)
-### -----------------------------------------------------------------
-
+### PROPERTIES
 ex:worksIn rdf:type owl:ObjectProperty ;
     rdfs:domain ex:Employee ;
     rdfs:range ex:Department ;
@@ -33,28 +24,22 @@ ex:worksIn rdf:type owl:ObjectProperty ;
 
 ex:hasSalary rdf:type owl:DatatypeProperty ;
     rdfs:domain ex:Employee ;
-    rdfs:range xsd:integer ;
+    rdfs:range ex:SalaryInteger ;
     rdfs:label "has salary" .
 
 ex:internalCode rdf:type owl:AnnotationProperty ;
     rdfs:label "internal legacy code" .
 
-### -----------------------------------------------------------------
-### DATATYPES
-### -----------------------------------------------------------------
-
+### DATATYPES (Fixed Structure)
 ex:SalaryInteger rdf:type rdfs:Datatype ;
-    owl:onDatatype xsd:integer .
+    rdfs:label "Salary Integer Range" .
 
-### -----------------------------------------------------------------
 ### INDIVIDUALS & LITERALS
-### -----------------------------------------------------------------
-
 ex:EngineeringDept rdf:type owl:NamedIndividual , ex:Department ;
     rdfs:label "Engineering Department" .
 
 ex:AliceSmith rdf:type owl:NamedIndividual , ex:Employee ;
     rdfs:label "Alice Smith" ;
     ex:worksIn ex:EngineeringDept ;
-    ex:hasSalary 85000 ;
+    ex:hasSalary "85000"^^ex:SalaryInteger ;
     ex:internalCode "EMP-2026-09" .`;
