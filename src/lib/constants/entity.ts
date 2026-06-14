@@ -24,7 +24,8 @@ export const ENTITY_TYPE_COLOURS: Record<EntityType, string> = {
 	annotationProperty: "sky",
 	instance: "blue",
 	literal: "overlay-0",
-	blank: "overlay-2"
+	blank: "overlay-2",
+	list: "mauve"
 };
 
 export function entityTypeLabel(nodeType: EntityType, external: boolean): string {
