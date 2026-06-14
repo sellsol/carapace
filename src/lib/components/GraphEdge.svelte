@@ -37,21 +37,39 @@
 	});
 
 	const labelPos = $derived({ x: (arrow.x1 + arrow.x2) / 2, y: (arrow.y1 + arrow.y2) / 2 });
-
 	const labelText = $derived(edge.prefix ? `${edge.prefix}:${edge.label}` : edge.label);
 </script>
 
-<line x1={arrow.x1} y1={arrow.y1} x2={arrow.x2} y2={arrow.y2} class="stroke-overlay-1" stroke-width="1.5" />
-<polygon points="{arrow.tipX},{arrow.tipY} {arrow.bx1},{arrow.by1} {arrow.bx2},{arrow.by2}" class="fill-overlay-0" />
-<text
-	x={labelPos.x}
-	y={labelPos.y}
-	text-anchor="middle"
-	font-size="11"
-	class="fill-text stroke-mantle"
-	stroke-width="3"
-	stroke-linejoin="round"
-	paint-order="stroke"
->
-	{labelText}
-</text>
+{#if edge.collectionEdge}
+	<line
+		x1={arrow.x1}
+		y1={arrow.y1}
+		x2={arrow.x2}
+		y2={arrow.y2}
+		class="stroke-mauve"
+		stroke-dasharray="5"
+		stroke-width="1.5"
+	/>
+	<polygon points="{arrow.tipX},{arrow.tipY} {arrow.bx1},{arrow.by1} {arrow.bx2},{arrow.by2}" class="fill-mauve" />
+{:else}
+	<line x1={arrow.x1} y1={arrow.y1} x2={arrow.x2} y2={arrow.y2} class="stroke-overlay-1" stroke-width="1.5" />
+	<polygon
+		points="{arrow.tipX},{arrow.tipY} {arrow.bx1},{arrow.by1} {arrow.bx2},{arrow.by2}"
+		class="fill-overlay-0"
+	/>
+{/if}
+
+{#if !edge.collectionEdge}
+	<text
+		x={labelPos.x}
+		y={labelPos.y}
+		text-anchor="middle"
+		font-size="11"
+		class="fill-text stroke-mantle"
+		stroke-width="3"
+		stroke-linejoin="round"
+		paint-order="stroke"
+	>
+		{labelText}
+	</text>
+{/if}

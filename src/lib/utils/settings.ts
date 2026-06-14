@@ -4,10 +4,10 @@ import type { GraphSettings } from "$lib/types/tabs";
 export function defaultGraphSettings(): GraphSettings {
 	return {
 		duplicateExternalNodes: false,
-		hiddenNamespaces: [RDF_NS, RDFS_NS, OWL_NS, XSD_NS],
+		hiddenNamespaces: [RDF_NS, RDFS_NS, OWL_NS],
 		hiddenEntityTypes: ["blank"],
 		hiddenPredicateUris: [],
-		hiddenInstanceOfUris: [OWL_NS + "Ontology", OWL_NS + "Restriction", OWL_NS + "Axiom"]
+		hiddenInstanceOfUris: [OWL_NS + "Ontology"]
 	};
 }
 

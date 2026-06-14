@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { entityTypeColour, entityTypeLabel } from "$lib/constants/entity";
 	import {
+		COLLECTION_NODE_RADIUS,
 		NODE_BADGE_FONT_SIZE,
 		NODE_BADGE_PADDING_X,
 		NODE_BODY_FONT_SIZE,
@@ -33,6 +34,9 @@
 	const badgeY = $derived(NODE_HEADER_HEIGHT + NODE_CONTENT_PADDING_Y + (NODE_LINE_HEIGHT - badgeHeight) / 2);
 	const badgeTextY = $derived(badgeY + badgeHeight / 2 + NODE_BADGE_FONT_SIZE * 0.35);
 
+	const cx = $derived(node.width / 2);
+	const cy = $derived(node.height / 2);
+
 	function getLabelY(i: number) {
 		return NODE_HEADER_HEIGHT + NODE_CONTENT_PADDING_Y + (i + 0.5) * NODE_LINE_HEIGHT + NODE_BODY_FONT_SIZE * 0.35;
 	}
@@ -58,7 +62,58 @@
 </script>
 
 <g transform="translate({node.x}, {node.y})" class={locked ? "drop-shadow-sm" : "cursor-move drop-shadow-sm"}>
-	{#if node.nodeType === "blank"}
+	{#if node.collection}
+		{#if selected}
+			<circle
+				{cx}
+				{cy}
+				r={COLLECTION_NODE_RADIUS + 4}
+				fill="none"
+				stroke="var(--blue)"
+				stroke-width="2"
+				stroke-dasharray="4,2"
+				pointer-events="none"
+			/>
+		{/if}
+		<circle
+			{cx}
+			{cy}
+			r={COLLECTION_NODE_RADIUS}
+			style="fill: color-mix(in srgb, var(--{colour}) 15%, var(--mantle)); stroke: var(--{colour});"
+			stroke-width="1.5"
+			role="presentation"
+			onmousedown={handleMouseDown}
+		/>
+		<g transform="translate({cx}, {cy})" pointer-events="none">
+			{#if node.collectionType === "list"}
+				<line x1={-4} y1={-3} x2={4} y2={-3} class="stroke-mauve" stroke-width="2" />
+				<line x1={-4} y1={0} x2={4} y2={0} class="stroke-mauve" stroke-width="2" />
+				<line x1={-4} y1={3} x2={4} y2={3} class="stroke-mauve" stroke-width="2" />
+			{:else if node.collectionType === "enumeration"}
+				<path
+					d="M {-4},{-4} L {0},{4} L {4},{-4}"
+					fill="none"
+					class="stroke-mauve"
+					stroke-width="2"
+					stroke-linejoin="round"
+				/>
+			{:else if node.collectionType === "intersection"}
+				<path
+					d="M {-4},{3} Q {-4},{-4} {0},{-4} Q {4},{-4} {4},{3}"
+					fill="none"
+					class="stroke-mauve"
+					stroke-width="2"
+				/>
+			{:else if node.collectionType === "union"}
+				<path
+					d="M {-4},{-3} Q {-4},{4} {0},{4} Q {4},{4} {4},{-3}"
+					fill="none"
+					class="stroke-mauve"
+					stroke-width="2"
+				/>
+			{/if}
+		</g>
+	{:else if node.nodeType === "blank"}
 		{#if selected}
 			<circle
 				cx={node.width / 2}

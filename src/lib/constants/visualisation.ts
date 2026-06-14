@@ -20,6 +20,7 @@ export const NODE_BADGE_PADDING_X = 4;
 export const NODE_BADGE_FONT_SIZE = 10;
 
 export const BLANK_NODE_RADIUS = 6;
+export const COLLECTION_NODE_RADIUS = 12;
 
 export const ARROW_INSET = 2;
 export const ARROW_SIZE = 8;
@@ -47,5 +48,3 @@ export const ZOOM_WHEEL_IN_FACTOR = 1.05;
 export const ZOOM_WHEEL_OUT_FACTOR = 0.95;
 export const ZOOM_FIT_MAX = 1;
 export const FIT_PADDING = 50;
-
-

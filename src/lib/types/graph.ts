@@ -6,28 +6,37 @@ export type EntityType =
 	| "annotationProperty"
 	| "instance"
 	| "literal"
-	| "blank";
+	| "blank"
+	| "list";
+
+export type CollectionType = "list" | "union" | "intersection" | "enumeration";
 
 export type Node = {
 	id: string;
 	uri: string;
-	label: string;
 	prefix: string | null;
-	nodeType: EntityType;
-	external: boolean;
-	blank: boolean;
+	label: string;
+
 	x: number;
 	y: number;
 	width: number;
 	height: number;
 	bodyLines: string[];
 	badgeWidth: number;
+
+	nodeType: EntityType;
+	external: boolean;
+	blank: boolean;
+	collection: boolean;
+	collectionType: CollectionType | null;
 };
 
 export type Edge = {
 	id: string;
 	source: Node;
 	target: Node;
-	label: string;
 	prefix: string | null;
+	label: string;
+
+	collectionEdge: boolean;
 };
