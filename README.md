@@ -4,9 +4,14 @@
 
 Edit TTL to see entities, relationships, and inheritance hierarchies updated on a good-looking graph in real time. Force graph computations are used to load an initial spread of nodes, which can be rearranged manually through dragging.
 
-Nodes are automatically classified into the entity types: Class, Datatype, Object Property, Data Property, Annotation Property, Instance (named individuals), and Literal.
+Nodes are automatically classified into entity types, and special nodes and edges like blank nodes and lists are rendered to indicate meaning.
 
-![sample.png](docs/screenshots/sample.png)
+<p align="center">
+  <img src="docs/screenshots/sample.png" width="90%" />
+</p>
+<p align="center">
+    <img src="docs/screenshots/sample-lists.png" width="90%" />
+</p>
 
 ## Features
 
@@ -31,7 +36,7 @@ Nodes are automatically classified into the entity types: Class, Datatype, Objec
 
 ## Roadmap
 
-- **Line to Node Sync:** Button to pan to node corresponding to current line in code editor.
-- **Rich Blank Nodes Rendering:** Various visualisation changes for patterns that are confusing to look at as blank nodes (RDF lists, OWL restrictions, etc.), such as additional node entity types, special shapes, colours or visual groupings that may provide more readability.
+- **Richer OWL Node and Edge Visuals:** Various more special visual for OWL nodes and edges to better indicate meaning.
 - **RDF/ XML Import:** Import RDF/ XML file as an alternative to TTL file import.
+- **Line to Node Sync:** Button to pan to node corresponding to current line in code editor.
 - **Setting Whitelists:** Alternative to current settings lists, allowing the user to whitelist instead of blacklist namespaces, predicates, etc.
