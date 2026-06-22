@@ -63,6 +63,16 @@
 		renameInput = "";
 	}
 
+	function handleRenameKeyDown(event: KeyboardEvent) {
+		event.stopPropagation();
+
+		if (event.key === "Enter") {
+			confirmRename();
+		} else if (event.key === "Escape") {
+			cancelRename();
+		}
+	}
+
 	function handleDuplicateTab(id: string) {
 		tabsStore.duplicateTab(id);
 	}
@@ -190,13 +200,7 @@
 									bind:value={renameInput}
 									class="h-6 px-1 text-sm"
 									onclick={(e) => e.stopPropagation()}
-									onkeydown={(e) => {
-										if (e.key === "Enter") {
-											confirmRename();
-										} else if (e.key === "Escape") {
-											cancelRename();
-										}
-									}}
+									onkeydown={handleRenameKeyDown}
 									onblur={confirmRename}
 									autofocus
 								/>
