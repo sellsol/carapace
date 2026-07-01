@@ -4,7 +4,7 @@ export const SAMPLE_TURTLE = `@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-sy
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
 @prefix ex:   <http://example.org/test#> .
 
-### ONTOLOGY DECLARATION
+### ONTOLOGY
 <http://example.org/test> rdf:type owl:Ontology ;
     rdfs:label "Visualization Test Ontology" ;
     owl:versionInfo "1.0" .
@@ -30,11 +30,11 @@ ex:hasSalary rdf:type owl:DatatypeProperty ;
 ex:internalCode rdf:type owl:AnnotationProperty ;
     rdfs:label "internal legacy code" .
 
-### DATATYPES (Fixed Structure)
+### DATATYPES
 ex:SalaryInteger rdf:type rdfs:Datatype ;
     rdfs:label "Salary Integer Range" .
 
-### INDIVIDUALS & LITERALS
+### INDIVIDUALS
 ex:EngineeringDept rdf:type owl:NamedIndividual , ex:Department ;
     rdfs:label "Engineering Department" .
 

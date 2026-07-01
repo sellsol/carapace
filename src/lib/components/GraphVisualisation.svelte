@@ -19,7 +19,7 @@
 	import { tabsStore } from "$lib/stores/tabs.svelte";
 	import type { Edge, Node } from "$lib/types/graph";
 	import type { GraphSettings } from "$lib/types/tabs";
-	import { exportSvgToFile } from "$lib/utils/export";
+	import { exportSvg } from "$lib/utils/export";
 	import { defaultGraphSettings, makeSettingsHash } from "$lib/utils/settings";
 	import { createGraphFromTriples, makeTriplesHash } from "$lib/utils/visualisation";
 
@@ -53,9 +53,7 @@
 	let currentTabId = "";
 
 	let triplesHash = "";
-	let settingsHash = makeSettingsHash(
-		tabsStore.getActiveTab()?.settings ?? defaultGraphSettings()
-	);
+	let settingsHash = makeSettingsHash(tabsStore.getActiveTab()?.settings ?? defaultGraphSettings());
 	let layoutDone = false;
 	let lastReloadTrigger = 0;
 	let loadGeneration = 0;
@@ -435,7 +433,7 @@
 
 	onMount(() => {
 		currentTabId = tabsStore.activeTabId;
-		tabsStore.exportSvg = () => exportSvgToFile(svgEl, nodes, transform);
+		tabsStore.exportSvg = () => exportSvg(svgEl, nodes, transform);
 
 		const resizeObserver = new ResizeObserver((entries) => {
 			for (const entry of entries) {

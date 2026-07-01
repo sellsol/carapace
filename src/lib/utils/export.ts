@@ -1,3 +1,4 @@
+import { EXPORT_STYLE_PROPERTIES } from "$lib/constants/visualisation";
 import type { Node } from "$lib/types/graph";
 
 export function downloadBlob(content: string, filename: string, mime: string): void {
@@ -15,59 +16,36 @@ export function downloadBlob(content: string, filename: string, mime: string): v
 	URL.revokeObjectURL(url);
 }
 
-const EXPORT_STYLE_PROPERTIES = [
-	"fill",
-	"stroke",
-	"stroke-width",
-	"font-size",
-	"font-family",
-	"font-weight",
-	"text-anchor",
-	"paint-order",
-	"opacity",
-	"stroke-linejoin",
-	"stroke-linecap",
-	"filter"
-];
-
-function inlineStyles(clone: Element, original: Element) {
-	const cs = window.getComputedStyle(original);
-	for (const prop of EXPORT_STYLE_PROPERTIES) {
-		const value = cs.getPropertyValue(prop);
-		if (value && value !== "none" && value !== "normal" && value !== "0px" && value !== "0px 0px 0px 0px") {
-			(clone as SVGElement).style.setProperty(prop, value);
-		}
-	}
-	for (let i = 0; i < clone.children.length && i < original.children.length; i++) {
-		inlineStyles(clone.children[i], original.children[i]);
-	}
-}
-
-export function exportSvgToFile(svgEl: SVGSVGElement, nodes: Node[], transform: { x: number; y: number; k: number }) {
+export function exportSvg(svgEl: SVGSVGElement, nodes: Node[], transform: { x: number; y: number; k: number }) {
 	if (!svgEl || nodes.length === 0) return;
 
 	const padding = 40;
-	const screenX = (x: number) => x * transform.k + transform.x;
-	const screenY = (y: number) => y * transform.k + transform.y;
-	const dimensions = nodes.map((n) => ({
-		x: screenX(n.x),
-		y: screenY(n.y),
+	const dims = nodes.map((n) => ({
+		x: n.x * transform.k + transform.x,
+		y: n.y * transform.k + transform.y,
 		w: n.width * transform.k,
 		h: n.height * transform.k
 	}));
-	const minX = Math.min(...dimensions.map((d) => d.x)) - padding;
-	const minY = Math.min(...dimensions.map((d) => d.y)) - padding;
-	const maxX = Math.max(...dimensions.map((d) => d.x + d.w)) + padding;
-	const maxY = Math.max(...dimensions.map((d) => d.y + d.h)) + padding;
-	const boxW = maxX - minX;
-	const boxH = maxY - minY;
+	const minX = Math.min(...dims.map((d) => d.x)) - padding;
+	const minY = Math.min(...dims.map((d) => d.y)) - padding;
+	const maxX = Math.max(...dims.map((d) => d.x + d.w)) + padding;
+	const maxY = Math.max(...dims.map((d) => d.y + d.h)) + padding;
 
 	const out = svgEl.cloneNode(true) as SVGSVGElement;
-	inlineStyles(out, svgEl);
-	out.setAttribute("viewBox", `${minX} ${minY} ${boxW} ${boxH}`);
-	out.setAttribute("width", String(boxW));
-	out.setAttribute("height", String(boxH));
+	const originals = svgEl.querySelectorAll("*");
+	const clones = out.querySelectorAll("*");
+	clones.forEach((el, i) => {
+		const cs = getComputedStyle(originals[i]);
+		for (const prop of EXPORT_STYLE_PROPERTIES) {
+			const val = cs.getPropertyValue(prop);
+			if (val) (el as SVGElement).style.setProperty(prop, val);
+		}
+	});
 
-	const svgDoc = new XMLSerializer().serializeToString(out);
-	downloadBlob(svgDoc, "graph.svg", "image/svg+xml;charset=utf-8");
+	out.setAttribute("viewBox", `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
+	out.setAttribute("width", String(maxX - minX));
+	out.setAttribute("height", String(maxY - minY));
+
+	const filename = `carapace_${new Date().toISOString().slice(0, 10)}.svg`;
+	downloadBlob(new XMLSerializer().serializeToString(out), filename, "image/svg+xml;charset=utf-8");
 }

@@ -35,3 +35,19 @@ export const ZOOM_WHEEL_IN_FACTOR = 1.05;
 export const ZOOM_WHEEL_OUT_FACTOR = 0.95;
 export const ZOOM_FIT_MAX = 1;
 export const FIT_PADDING = 50;
+
+// export
+export const EXPORT_STYLE_PROPERTIES = [
+	"fill",
+	"stroke",
+	"stroke-width",
+	"font-size",
+	"font-family",
+	"font-weight",
+	"text-anchor",
+	"paint-order",
+	"opacity",
+	"stroke-linejoin",
+	"stroke-linecap",
+	"filter"
+];
