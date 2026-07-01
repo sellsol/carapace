@@ -1,7 +1,7 @@
 {
 	"name": "carapace",
 	"private": true,
-	"version": "0.1.0",
+	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
@@ -52,6 +52,7 @@
 		"paneforge": "^1.0.2",
 		"prettier": "^3.8.4",
 		"prettier-plugin-svelte": "^3.4.0",
+		"semantic-release": "^24",
 		"svelte": "^5.56.3",
 		"svelte-check": "^4.6.0",
 		"svelte-sonner": "^1.1.1",

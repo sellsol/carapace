@@ -30,7 +30,7 @@
 	<header class="h-12 border-b bg-card flex items-center px-4">
 		<Turtle class="h-7 w-7 pr-1"></Turtle>
 		<h1 class="text-accent-foreground font-semibold mr-2">Carapace</h1>
-		<span class="text-muted-foreground">v0.1.0</span>
+		<span class="text-muted-foreground">v{__APP_VERSION__}</span>
 
 		<div class="ml-auto flex items-center gap-1">
 			<a href="https://github.com/sellsol/carapace" target="_blank" rel="noopener noreferrer">

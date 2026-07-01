@@ -6,7 +6,7 @@ on:
     workflow_dispatch: # allows manual running on GitHub Actions
 
 permissions:
-    contents: read
+    contents: write
     pages: write
     id-token: write
 
@@ -34,6 +34,15 @@ jobs:
 
             - name: Install dependencies
               run: pnpm install
+
+            - name: Semantic Release
+              continue-on-error: true
+              run: pnpm semantic-release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Set Version from Tag
+              run: echo "VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo '0.0.0')" >> $GITHUB_ENV
 
             - name: Setup Pages
               uses: actions/configure-pages@v3
