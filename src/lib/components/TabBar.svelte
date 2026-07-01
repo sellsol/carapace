@@ -77,19 +77,25 @@
 		tabsStore.duplicateTab(id);
 	}
 
-	function handleExportActiveTab() {
+	function handleExportTTL() {
 		const tab = tabsStore.getActiveTab();
 		if (!tab) return;
 
 		const filename = `${tab.name.replace(/[^a-z0-9]/gi, "_")}.ttl`;
 		downloadBlob(tab.ttlContent, filename, "text/turtle");
-		logger.debug("Tab Exported", { id: tab.id, name: tab.name });
+
+		logger.debug("Tab Exported (TTL)", { id: tab.id, name: tab.name });
 	}
 
 	function handleExportCarapace() {
+		const tab = tabsStore.getActiveTab();
+		if (!tab) return;
+
 		const json = JSON.stringify(tabsStore.toJson(), null, 2);
 		const filename = `carapace_${new Date().toISOString().slice(0, 10)}.carapace`;
 		downloadBlob(json, filename, "application/json");
+
+		logger.debug("Tab Exported (JSON)", { id: tab.id, name: tab.name });
 	}
 
 	function handleExportSvg() {
@@ -284,7 +290,7 @@
 				<DropdownMenu.Item onclick={handleExportSvg}>
 					<FileImage />Export SVG
 				</DropdownMenu.Item>
-				<DropdownMenu.Item onclick={handleExportActiveTab}>
+				<DropdownMenu.Item onclick={handleExportTTL}>
 					<FileCode />Export TTL
 				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={handleExportCarapace}>
