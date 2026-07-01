@@ -428,6 +428,10 @@
 
 			layoutDone = true;
 			savePositions();
+
+			if (!tab.camera) {
+				handleFitView();
+			}
 		});
 	});
 
