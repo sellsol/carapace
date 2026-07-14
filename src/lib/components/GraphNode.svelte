@@ -14,6 +14,7 @@
 		NODE_LINE_HEIGHT
 	} from "$lib/constants/visualisation";
 	import type { Node } from "$lib/types/graph";
+	import { TEXT_VERTICAL_OFFSET_FACTOR } from "$lib/utils/layout";
 
 	interface Props {
 		node: Node;
@@ -29,17 +30,10 @@
 	const colour = $derived(entityTypeColour(node.nodeType, node.external));
 
 	const contentInset = $derived(NODE_BORDER_WIDTH / 2 + NODE_CONTENT_PADDING_X / 2);
-	const headerTextY = $derived(NODE_HEADER_HEIGHT / 2 + NODE_HEADER_FONT_SIZE * 0.35);
+	const headerTextY = $derived(NODE_HEADER_HEIGHT / 2 + NODE_HEADER_FONT_SIZE * TEXT_VERTICAL_OFFSET_FACTOR);
 	const badgeHeight = $derived(NODE_BADGE_FONT_SIZE + 4);
 	const badgeY = $derived(NODE_HEADER_HEIGHT + NODE_CONTENT_PADDING_Y + (NODE_LINE_HEIGHT - badgeHeight) / 2);
 	const badgeTextY = $derived(badgeY + badgeHeight / 2 + NODE_BADGE_FONT_SIZE * 0.35);
-
-	const cx = $derived(node.width / 2);
-	const cy = $derived(node.height / 2);
-
-	function getLabelY(i: number) {
-		return NODE_HEADER_HEIGHT + NODE_CONTENT_PADDING_Y + (i + 0.5) * NODE_LINE_HEIGHT + NODE_BODY_FONT_SIZE * 0.35;
-	}
 
 	function handleMouseMove(event: MouseEvent) {
 		onDrag(node, event);
@@ -65,8 +59,8 @@
 	{#if node.collection}
 		{#if selected}
 			<circle
-				{cx}
-				{cy}
+				cx={node.width / 2}
+				cy={node.height / 2}
 				r={COLLECTION_NODE_RADIUS + 4}
 				fill="none"
 				stroke="var(--blue)"
@@ -76,15 +70,15 @@
 			/>
 		{/if}
 		<circle
-			{cx}
-			{cy}
+			cx={node.width / 2}
+			cy={node.height / 2}
 			r={COLLECTION_NODE_RADIUS}
 			style="fill: color-mix(in srgb, var(--{colour}) 15%, var(--mantle)); stroke: var(--{colour});"
 			stroke-width="1.5"
 			role="presentation"
 			onmousedown={handleMouseDown}
 		/>
-		<g transform="translate({cx}, {cy})" pointer-events="none">
+		<g transform="translate({node.width / 2}, {node.height / 2})" pointer-events="none">
 			{#if node.collectionType === "list"}
 				<line x1={-4} y1={-3} x2={4} y2={-3} class="stroke-mauve" stroke-width="2" />
 				<line x1={-4} y1={0} x2={4} y2={0} class="stroke-mauve" stroke-width="2" />
@@ -161,7 +155,7 @@
 		/>
 		<text
 			x={node.width / 2}
-			y={node.height / 2 + NODE_HEADER_FONT_SIZE * 0.35}
+			y={node.height / 2 + NODE_HEADER_FONT_SIZE * TEXT_VERTICAL_OFFSET_FACTOR}
 			text-anchor="middle"
 			style="fill: var(--{colour})"
 			class="font-semibold"
@@ -227,7 +221,10 @@
 		{#each node.bodyLines as line, i}
 			<text
 				x={i === 0 && node.prefix ? contentInset + node.badgeWidth + NODE_LABEL_GAP : contentInset}
-				y={getLabelY(i)}
+				y={NODE_HEADER_HEIGHT +
+					NODE_CONTENT_PADDING_Y +
+					(i + 0.5) * NODE_LINE_HEIGHT +
+					NODE_BODY_FONT_SIZE * TEXT_VERTICAL_OFFSET_FACTOR}
 				class="fill-text"
 				font-size={NODE_BODY_FONT_SIZE}
 				pointer-events="none">{line}</text

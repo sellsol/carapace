@@ -1,5 +1,6 @@
 import { OWL_NS, RDFS_NS, RDF_NS, XSD_NS } from "$lib/constants/namespaces";
 import type { GraphSettings } from "$lib/types/tabs";
+import { tabsStore } from "$lib/stores/tabs.svelte";
 
 export function defaultGraphSettings(): GraphSettings {
 	return {
@@ -11,7 +12,10 @@ export function defaultGraphSettings(): GraphSettings {
 	};
 }
 
-export function inHiddenNamespace(uri: string, hiddenNamespaces: string[]): boolean {
+export function inHiddenNamespace(uri: string): boolean {
+	const hiddenNamespaces = tabsStore.getActiveTab()?.settings.hiddenNamespaces;
+	if (!hiddenNamespaces) return false;
+
 	for (const ns of hiddenNamespaces) {
 		if (uri.startsWith(ns)) return true;
 	}

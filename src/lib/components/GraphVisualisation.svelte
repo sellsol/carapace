@@ -21,7 +21,7 @@
 	import type { GraphSettings } from "$lib/types/tabs";
 	import { exportSvg } from "$lib/utils/export";
 	import { defaultGraphSettings, makeSettingsHash } from "$lib/utils/settings";
-	import { createGraphFromTriples, makeTriplesHash } from "$lib/utils/visualisation";
+	import { buildGraph, makeTriplesHash } from "$lib/utils/graph";
 
 	import { Button } from "$lib/components/ui/button";
 	import { Spinner } from "$lib/components/ui/spinner";
@@ -161,8 +161,8 @@
 		}));
 	}
 
-	function buildGraph(settings: GraphSettings, nodePositions: Array<{ uri: string; x: number; y: number }>) {
-		const graph = createGraphFromTriples(triples, settings, nodePositions, prefixMap);
+	function rebuildGraph(settings: GraphSettings, nodePositions: Array<{ uri: string; x: number; y: number }>) {
+		const graph = buildGraph(triples, settings, nodePositions, prefixMap);
 
 		nodes = graph.nodes;
 		edges = graph.edges;
@@ -194,7 +194,7 @@
 
 		layoutDone = false;
 
-		buildGraph(tabsStore.getActiveTab()?.settings ?? defaultGraphSettings(), []);
+		rebuildGraph(tabsStore.getActiveTab()?.settings ?? defaultGraphSettings(), []);
 		await runLayoutWorker();
 		if (gen !== loadGeneration) return;
 
@@ -411,7 +411,7 @@
 		const nodePositions = getPositions();
 
 		runLayoutPipeline(async (gen) => {
-			buildGraph(settings, nodePositions);
+			rebuildGraph(settings, nodePositions);
 
 			if (tab.locked) {
 				layoutDone = true;
