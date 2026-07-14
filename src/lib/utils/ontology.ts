@@ -1,6 +1,6 @@
 import {
-	BUILTIN_DATATYPE,
-	BUILTIN_INSTANCE,
+	BUILTIN_DATATYPES,
+	BUILTIN_INSTANCES,
 	BUILTIN_NS_TO_PREFIX,
 	BUILTIN_URI_TO_PROPERTY,
 	XSD_NS
@@ -37,11 +37,11 @@ export function resolveLocalName(uri: string): string {
 }
 
 export function classifyUriType(uri: string): EntityType | null {
-	const propertyType = BUILTIN_URI_TO_PROPERTY[uri];
-	if (propertyType) return propertyType as EntityType;
+	const propertyType = BUILTIN_URI_TO_PROPERTY.get(uri);
+	if (propertyType) return propertyType;
 
-	if (uri.startsWith(XSD_NS) || BUILTIN_DATATYPE.has(uri)) return "datatype";
-	if (BUILTIN_INSTANCE.has(uri)) return "instance";
+	if (uri.startsWith(XSD_NS) || BUILTIN_DATATYPES.has(uri)) return "datatype";
+	if (BUILTIN_INSTANCES.has(uri)) return "instance";
 	if (hasBuiltinPrefix(uri)) return "class";
 
 	return null;
