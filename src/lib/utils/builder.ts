@@ -93,9 +93,9 @@ export class Builder {
 			// Create source node
 			let source: Node;
 			if (quad.subject.termType === "BlankNode") {
-				source = this.addBlankNode(quad.subject.value);
+				source = this.addBlankNode(quad.subject.value, quad.object.value);
 			} else {
-				source = this.addNode(quad.subject.value);
+				source = this.addNode(quad.subject.value, quad.object.value);
 			}
 
 			// Create edge and target node
@@ -110,7 +110,7 @@ export class Builder {
 					objectUri = objectDescriptor.bridgeTarget;
 				}
 
-				const target: Node = this.addBlankNode(objectUri);
+				const target: Node = this.addBlankNode(objectUri, quad.subject.value);
 				this.addEdge(source, target, quad.predicate.value);
 			} else if (quad.object.termType === "Literal") {
 				if (this.settings.hiddenEntityTypes.includes("literal")) continue;
@@ -126,24 +126,39 @@ export class Builder {
 
 				let target: Node;
 				if (this.settings.duplicateExternalNodes && !objectDescriptor?.isLocal) {
-					target = this.addExternalNode(quad.object.value, objectType, quad.subject.value, quad.predicate.value);
+					target = this.addExternalNode(
+						quad.object.value,
+						objectType,
+						quad.subject.value,
+						quad.predicate.value
+					);
 				} else {
-					target = this.addNode(quad.object.value);
+					target = this.addNode(quad.object.value, quad.subject.value);
 				}
 				this.addEdge(source, target, quad.predicate.value);
 			}
 		}
 	}
 
-	private addNode(uri: string): Node {
+	private addNode(uri: string, nearbyUri?: string): Node {
 		if (this.uriToNode.has(uri)) return this.uriToNode.get(uri)!;
 
 		const descriptor = this.nodeDescriptors.get(uri);
 		const type = descriptor?.nodeType ?? classifyUriType(uri) ?? "class";
 		const label = resolveLocalName(uri);
 		const prefix = resolvePrefix(uri, this.namespacePrefixes);
-		const position = this.cachedPositions.get(uri)?.shift();
 		const dimensions = measureNodeDimensions(label, prefix, type, false);
+
+		let position = this.cachedPositions.get(uri)?.shift();
+		if (!position && nearbyUri) {
+			const nearbyPosition = this.cachedPositions.get(nearbyUri)?.[0] ?? this.uriToNode.get(nearbyUri);
+			if (nearbyPosition) {
+				position = {
+					x: nearbyPosition.x + (Math.random() - 0.5) * 300,
+					y: nearbyPosition.y + (Math.random() - 0.5) * 300
+				};
+			}
+		}
 
 		const node: Node = {
 			id: `node-${this.nextNodeId++}`,
@@ -155,8 +170,8 @@ export class Builder {
 			blank: false,
 			collection: false,
 			collectionType: null,
-			x: position ? position.x : Math.random() * CANVAS_WIDTH,
-			y: position ? position.y : Math.random() * CANVAS_HEIGHT,
+			x: position?.x ?? Math.random() * CANVAS_WIDTH,
+			y: position?.y ?? Math.random() * CANVAS_HEIGHT,
 			width: dimensions.width,
 			height: dimensions.height,
 			bodyLines: dimensions.bodyLines,
@@ -166,11 +181,21 @@ export class Builder {
 		return node;
 	}
 
-	private addBlankNode(uri: string): Node {
+	private addBlankNode(uri: string, nearbyUri?: string): Node {
 		if (this.uriToNode.has(uri)) return this.uriToNode.get(uri)!;
 
-		const position = this.cachedPositions.get(uri)?.shift();
 		const descriptor = this.nodeDescriptors.get(uri);
+
+		let position = this.cachedPositions.get(uri)?.shift();
+		if (!position && nearbyUri) {
+			const nearbyPosition = this.cachedPositions.get(nearbyUri)?.[0] ?? this.uriToNode.get(nearbyUri);
+			if (nearbyPosition) {
+				position = {
+					x: nearbyPosition.x + (Math.random() - 0.5) * 300,
+					y: nearbyPosition.y + (Math.random() - 0.5) * 300
+				};
+			}
+		}
 
 		if (descriptor?.nodeType) {
 			const dimensions = measureBlankNodeDimensions(descriptor.nodeType);
@@ -185,8 +210,8 @@ export class Builder {
 				blank: true,
 				collection: false,
 				collectionType: null,
-				x: position ? position.x : Math.random() * CANVAS_WIDTH,
-				y: position ? position.y : Math.random() * CANVAS_HEIGHT,
+				x: position?.x ?? Math.random() * CANVAS_WIDTH,
+				y: position?.y ?? Math.random() * CANVAS_HEIGHT,
 				width: dimensions.width,
 				height: dimensions.height,
 				bodyLines: [],
@@ -207,8 +232,8 @@ export class Builder {
 				blank: true,
 				collection: false,
 				collectionType: null,
-				x: position ? position.x : Math.random() * CANVAS_WIDTH,
-				y: position ? position.y : Math.random() * CANVAS_HEIGHT,
+				x: position?.x ?? Math.random() * CANVAS_WIDTH,
+				y: position?.y ?? Math.random() * CANVAS_HEIGHT,
 				width: diameter,
 				height: diameter,
 				bodyLines: [],
@@ -235,8 +260,8 @@ export class Builder {
 			blank: true,
 			collection: true,
 			collectionType,
-			x: position ? position.x : Math.random() * CANVAS_WIDTH,
-			y: position ? position.y : Math.random() * CANVAS_HEIGHT,
+			x: position?.x ?? Math.random() * CANVAS_WIDTH,
+			y: position?.y ?? Math.random() * CANVAS_HEIGHT,
 			width: diameter,
 			height: diameter,
 			bodyLines: [],
@@ -249,6 +274,7 @@ export class Builder {
 	private addLiteralNode(value: string, subjectUri: string, predicateUri: string): Node {
 		const key = `${subjectUri}|${predicateUri}|${value}`;
 		const groupKey = `${subjectUri}|${predicateUri}`;
+		const dimensions = measureNodeDimensions(value, null, "literal", false);
 
 		let position = this.cachedPositions.get(key)?.shift();
 		if (!position) {
@@ -259,10 +285,16 @@ export class Builder {
 					unclaimed.claimed = true;
 					position = unclaimed.position;
 				}
+			} else {
+				const nearbyPosition = this.cachedPositions.get(subjectUri)?.[0] ?? this.uriToNode.get(subjectUri);
+				if (nearbyPosition) {
+					position = {
+						x: nearbyPosition.x + (Math.random() - 0.5) * 300,
+						y: nearbyPosition.y + (Math.random() - 0.5) * 300
+					};
+				}
 			}
 		}
-
-		const dimensions = measureNodeDimensions(value, null, "literal", false);
 
 		const node: Node = {
 			id: `node-${this.nextNodeId++}`,
@@ -274,8 +306,8 @@ export class Builder {
 			blank: false,
 			collection: false,
 			collectionType: null,
-			x: position ? position.x : Math.random() * CANVAS_WIDTH,
-			y: position ? position.y : Math.random() * CANVAS_HEIGHT,
+			x: position?.x ?? Math.random() * CANVAS_WIDTH,
+			y: position?.y ?? Math.random() * CANVAS_HEIGHT,
 			width: dimensions.width,
 			height: dimensions.height,
 			bodyLines: dimensions.bodyLines,
@@ -289,8 +321,18 @@ export class Builder {
 		const key = `${subjectUri}|${predicateUri}|${uri}`;
 		const label = resolveLocalName(uri);
 		const prefix = resolvePrefix(uri, this.namespacePrefixes);
-		const position = this.cachedPositions.get(key)?.shift();
 		const dimensions = measureNodeDimensions(label, prefix, type, false);
+
+		let position = this.cachedPositions.get(key)?.shift();
+		if (!position) {
+			const nearbyPosition = this.cachedPositions.get(subjectUri)?.[0] ?? this.uriToNode.get(subjectUri);
+			if (nearbyPosition) {
+				position = {
+					x: nearbyPosition.x + (Math.random() - 0.5) * 300,
+					y: nearbyPosition.y + (Math.random() - 0.5) * 300
+				};
+			}
+		}
 
 		const node: Node = {
 			id: `node-${this.nextNodeId++}`,
@@ -302,8 +344,8 @@ export class Builder {
 			blank: false,
 			collection: false,
 			collectionType: null,
-			x: position ? position.x : Math.random() * CANVAS_WIDTH,
-			y: position ? position.y : Math.random() * CANVAS_HEIGHT,
+			x: position?.x ?? Math.random() * CANVAS_WIDTH,
+			y: position?.y ?? Math.random() * CANVAS_HEIGHT,
 			width: dimensions.width,
 			height: dimensions.height,
 			bodyLines: dimensions.bodyLines,
