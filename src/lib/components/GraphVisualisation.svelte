@@ -17,7 +17,7 @@
 	} from "$lib/constants/visualisation";
 	import { createLogger } from "$lib/logger";
 	import { tabsStore } from "$lib/stores/tabs.svelte";
-	import type { Edge, Node } from "$lib/types/graph";
+	import type { Edge, EntityType, Node } from "$lib/types/graph";
 	import type { GraphSettings } from "$lib/types/tabs";
 	import { exportSvg } from "$lib/utils/export";
 	import { defaultGraphSettings, makeSettingsHash } from "$lib/utils/settings";
@@ -77,19 +77,19 @@
 		const tab = tabsStore.getTab(currentTabId);
 		if (!tab) return;
 
-		tab.nodePositions = nodes.map((n) => ({ id: n.uri, x: n.x, y: n.y }));
+		tab.nodePositions = nodes.map((n) => ({ id: n.uri, x: n.x, y: n.y, nodeType: n.nodeType }));
 	}
 
-	function getPositions(): Array<{ uri: string; x: number; y: number }> {
+	function getPositions(): Array<{ uri: string; x: number; y: number; nodeType?: EntityType }> {
 		const tab = tabsStore.getActiveTab();
 		if (!tab) return [];
 
 		const nodePositions = tab.nodePositions ?? [];
 		if (tab.locked && nodePositions.length > 0) {
-			return nodePositions.map((p) => ({ uri: p.id, x: p.x, y: p.y }));
+			return nodePositions.map((p) => ({ uri: p.id, x: p.x, y: p.y, nodeType: p.nodeType }));
 		}
 		if (layoutDone) {
-			return nodes.map((n) => ({ uri: n.uri, x: n.x, y: n.y }));
+			return nodes.map((n) => ({ uri: n.uri, x: n.x, y: n.y, nodeType: n.nodeType }));
 		}
 		return [];
 	}
@@ -161,7 +161,7 @@
 		}));
 	}
 
-	function rebuildGraph(settings: GraphSettings, nodePositions: Array<{ uri: string; x: number; y: number }>) {
+	function rebuildGraph(settings: GraphSettings, nodePositions: Array<{ uri: string; x: number; y: number; nodeType?: EntityType }>) {
 		const graph = buildGraph(triples, settings, nodePositions, prefixMap);
 
 		nodes = graph.nodes;
