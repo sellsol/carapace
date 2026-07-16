@@ -23,7 +23,6 @@ export class Builder {
 	edges: Edge[] = [];
 	uriToNode = new Map<string, Node>();
 	nextNodeId = 0;
-	nextExternalId = 0;
 
 	constructor(
 		settings: GraphSettings,
@@ -127,7 +126,7 @@ export class Builder {
 
 				let target: Node;
 				if (this.settings.duplicateExternalNodes && !objectDescriptor?.isLocal) {
-					target = this.addExternalNode(quad.object.value, objectType);
+					target = this.addExternalNode(quad.object.value, objectType, quad.subject.value, quad.predicate.value);
 				} else {
 					target = this.addNode(quad.object.value);
 				}
@@ -286,8 +285,8 @@ export class Builder {
 		return node;
 	}
 
-	private addExternalNode(uri: string, type: EntityType): Node {
-		const key = `ext-${this.nextExternalId++}`;
+	private addExternalNode(uri: string, type: EntityType, subjectUri: string, predicateUri: string): Node {
+		const key = `${subjectUri}|${predicateUri}|${uri}`;
 		const label = resolveLocalName(uri);
 		const prefix = resolvePrefix(uri, this.namespacePrefixes);
 		const position = this.cachedPositions.get(key)?.shift();
@@ -295,7 +294,7 @@ export class Builder {
 
 		const node: Node = {
 			id: `node-${this.nextNodeId++}`,
-			uri,
+			uri: key,
 			label,
 			prefix,
 			nodeType: type,
