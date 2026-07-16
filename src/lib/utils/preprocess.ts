@@ -156,7 +156,7 @@ export class Preprocessor {
 		for (const [headUri, headDescriptor] of this.nodeDescriptors) {
 			if (!headDescriptor.isChain || headDescriptor.isChainRest) continue;
 
-			const members: { uri: string; type: string }[] = [];
+			const members: CollectionDescriptor["members"] = [];
 			const seen = new Set<string>();
 
 			let current = headUri;
@@ -177,7 +177,7 @@ export class Preprocessor {
 					}
 				}
 
-				members.push({ uri: memberUri, type: memberType });
+				members.push({ uri: memberUri, type: memberType, subjectUri: current });
 				current = currentDescriptor.chainNext ?? RDF_NIL;
 			}
 

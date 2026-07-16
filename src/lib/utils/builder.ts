@@ -1,6 +1,6 @@
 import type { Quad } from "n3";
 
-import { RDF_NIL } from "$lib/constants/namespaces";
+import { RDF_FIRST, RDF_NIL } from "$lib/constants/namespaces";
 import { BLANK_NODE_RADIUS, CANVAS_HEIGHT, CANVAS_WIDTH, COLLECTION_NODE_RADIUS } from "$lib/constants/visualisation";
 import type { CollectionType, Edge, EntityType, Node } from "$lib/types/graph";
 import type { CollectionDescriptor } from "$lib/types/processor";
@@ -14,6 +14,7 @@ export class Builder {
 	settings: GraphSettings;
 	namespacePrefixes: Record<string, string>;
 	cachedPositions: Map<string, { x: number; y: number }[]>;
+	literalGroups: Map<string, { value: string; position: { x: number; y: number }; claimed: boolean }[]>;
 
 	triples: Quad[];
 	nodeDescriptors: Map<string, NodeDescriptor>;
@@ -22,13 +23,13 @@ export class Builder {
 	edges: Edge[] = [];
 	uriToNode = new Map<string, Node>();
 	nextNodeId = 0;
-	nextLiteralId = 0;
 	nextExternalId = 0;
 
 	constructor(
 		settings: GraphSettings,
 		namespacePrefixes: Record<string, string>,
 		cachedPositions: Map<string, { x: number; y: number }[]>,
+		literalGroups: Map<string, { value: string; position: { x: number; y: number }; claimed: boolean }[]>,
 		triples: Quad[],
 		nodeDescriptors: Map<string, NodeDescriptor>,
 		collectionDescriptors: CollectionDescriptor[]
@@ -36,6 +37,7 @@ export class Builder {
 		this.settings = settings;
 		this.namespacePrefixes = namespacePrefixes;
 		this.cachedPositions = cachedPositions;
+		this.literalGroups = literalGroups;
 		this.triples = triples;
 		this.nodeDescriptors = nodeDescriptors;
 		this.collectionDescriptors = collectionDescriptors;
@@ -64,7 +66,7 @@ export class Builder {
 				if (member.type === "BlankNode") {
 					memberNode = this.addBlankNode(member.uri);
 				} else if (member.type === "Literal") {
-					memberNode = this.addLiteralNode(member.uri);
+					memberNode = this.addLiteralNode(member.uri, member.subjectUri, RDF_FIRST);
 				} else {
 					memberNode = this.addNode(member.uri);
 				}
@@ -114,7 +116,7 @@ export class Builder {
 			} else if (quad.object.termType === "Literal") {
 				if (this.settings.hiddenEntityTypes.includes("literal")) continue;
 
-				const target: Node = this.addLiteralNode(quad.object.value);
+				const target: Node = this.addLiteralNode(quad.object.value, quad.subject.value, quad.predicate.value);
 				this.addEdge(source, target, quad.predicate.value);
 			} else {
 				const objectDescriptor = this.nodeDescriptors.get(quad.object.value);
@@ -245,9 +247,22 @@ export class Builder {
 		return node;
 	}
 
-	private addLiteralNode(value: string): Node {
-		const key = `literal-${this.nextLiteralId++}`;
-		const position = this.cachedPositions.get(key)?.shift();
+	private addLiteralNode(value: string, subjectUri: string, predicateUri: string): Node {
+		const key = `${subjectUri}|${predicateUri}|${value}`;
+		const groupKey = `${subjectUri}|${predicateUri}`;
+
+		let position = this.cachedPositions.get(key)?.shift();
+		if (!position) {
+			const candidatePositions = this.literalGroups.get(groupKey);
+			if (candidatePositions) {
+				const unclaimed = candidatePositions.find((c) => !c.claimed);
+				if (unclaimed) {
+					unclaimed.claimed = true;
+					position = unclaimed.position;
+				}
+			}
+		}
+
 		const dimensions = measureNodeDimensions(value, null, "literal", false);
 
 		const node: Node = {

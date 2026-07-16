@@ -25,5 +25,5 @@ export class NodeDescriptor {
 export interface CollectionDescriptor {
 	headUri: string;
 	collectionType: CollectionType;
-	members: { uri: string; type: string }[];
+	members: { uri: string; type: string; subjectUri: string }[];
 }
