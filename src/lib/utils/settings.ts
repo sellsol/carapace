@@ -1,6 +1,6 @@
-import { OWL_NS, RDFS_NS, RDF_NS, XSD_NS } from "$lib/constants/namespaces";
-import type { GraphSettings } from "$lib/types/tabs";
+import { OWL_NS, RDFS_NS, RDF_NS } from "$lib/constants/namespaces";
 import { tabsStore } from "$lib/stores/tabs.svelte";
+import type { GraphSettings } from "$lib/types/tabs";
 
 export function defaultGraphSettings(): GraphSettings {
 	return {

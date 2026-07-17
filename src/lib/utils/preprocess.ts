@@ -185,5 +185,4 @@ export class Preprocessor {
 			this.collectionDescriptors.push({ headUri, collectionType, members });
 		}
 	}
-
 }

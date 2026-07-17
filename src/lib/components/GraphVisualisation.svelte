@@ -20,8 +20,8 @@
 	import type { Edge, EntityType, Node } from "$lib/types/graph";
 	import type { GraphSettings } from "$lib/types/tabs";
 	import { exportSvg } from "$lib/utils/export";
-	import { defaultGraphSettings, makeSettingsHash } from "$lib/utils/settings";
 	import { buildGraph, makeTriplesHash } from "$lib/utils/graph";
+	import { defaultGraphSettings, makeSettingsHash } from "$lib/utils/settings";
 
 	import { Button } from "$lib/components/ui/button";
 	import { Spinner } from "$lib/components/ui/spinner";
@@ -161,7 +161,10 @@
 		}));
 	}
 
-	function rebuildGraph(settings: GraphSettings, nodePositions: Array<{ uri: string; x: number; y: number; nodeType?: EntityType }>) {
+	function rebuildGraph(
+		settings: GraphSettings,
+		nodePositions: Array<{ uri: string; x: number; y: number; nodeType?: EntityType }>
+	) {
 		const graph = buildGraph(triples, settings, nodePositions, prefixMap);
 
 		nodes = graph.nodes;

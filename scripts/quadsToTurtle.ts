@@ -1,4 +1,4 @@
-import { DataFactory, Writer } from "n3";
+import { DataFactory, Quad, Writer } from "n3";
 
 const { namedNode, blankNode, literal, quad } = DataFactory;
 
@@ -34,11 +34,8 @@ const constants: Record<string, string> = {
 const input = process.argv.slice(2).join(" ");
 const paramNames = ["namedNode", "blankNode", "literal", "quad", ...Object.keys(constants)];
 const paramValues = [namedNode, blankNode, literal, quad, ...Object.values(constants)];
-const triples: ReturnType<typeof quad>[] = new Function(
-	...paramNames,
-	`return [${input}];`
-)(...paramValues);
+const triples: ReturnType<typeof quad>[] = new Function(...paramNames, `return [${input}];`)(...paramValues);
 
 const writer = new Writer({ format: "text/turtle" });
-triples.forEach((t) => writer.addQuad(t as any));
+triples.forEach((t) => writer.addQuad(t as Quad));
 writer.end((_, result) => console.log("\n" + result));

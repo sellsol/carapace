@@ -85,7 +85,9 @@ export default [
 			"CLAUDE.md",
 			"*.md",
 			// Generated i18n files
-			"src/i18n/i18n-*.ts"
+			"src/i18n/i18n-*.ts",
+			// Generated Svelte Shadcn components
+			"src/lib/components/ui/**"
 		]
 	}
 ];

@@ -1,0 +1,17 @@
+# Dependency locks
+pnpm-lock.yaml
+package-lock.json
+
+# Installed dependencies and system files
+node_modules/
+.DS_Store
+.env
+.env.*
+
+# Build and distribution folders
+dist/
+build/
+out/
+
+# Generated Svelte Shadcn components
+src/lib/components/ui/

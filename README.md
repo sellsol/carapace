@@ -47,4 +47,4 @@
 
 ## Motivation
 
-There is a shortage of low-setup, modern tools for ontology work. Many general-purpose graph visualisers do not support ontology/ [OWL](https://www.w3.org/OWL/) specific rendering, and creating nodes and edges manually becomes tedious quickly. Carapace is text-based (TTL), free, open-source and deployed on the web at [carapace.space](http://www.carapace.space), allowing you to easily inspect and create modern-looking graphs compatible with other applications that work with TTL. 
+There is a shortage of low-setup, modern tools for ontology work. Many general-purpose graph visualisers do not support ontology/ [OWL](https://www.w3.org/OWL/) specific rendering, and creating nodes and edges manually becomes tedious quickly. Carapace is text-based (TTL), free, open-source and deployed on the web at [carapace.space](http://www.carapace.space), allowing you to easily inspect and create modern-looking graphs compatible with other applications that work with TTL.
