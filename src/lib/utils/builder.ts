@@ -357,13 +357,20 @@ export class Builder {
 
 	private addEdge(source: Node, target: Node, predicateUri: string) {
 		const prefix = resolvePrefix(predicateUri, this.namespacePrefixes);
+		const localName = resolveLocalName(predicateUri);
+		const fullName = prefix ? `${prefix}:${localName}` : localName;
+
+		const existingEdge = this.edges.find((e) => !e.collectionEdge && e.source === source && e.target === target);
+		if (existingEdge) {
+			existingEdge.label += `\n${fullName}`;
+			return;
+		}
 
 		const edge: Edge = {
 			id: `edge-${this.edges.length}`,
 			source,
 			target,
-			label: resolveLocalName(predicateUri),
-			prefix,
+			label: fullName,
 			collectionEdge: false
 		};
 		this.edges.push(edge);
@@ -375,7 +382,6 @@ export class Builder {
 			source,
 			target,
 			label: "",
-			prefix: null,
 			collectionEdge: true
 		};
 		this.edges.push(edge);

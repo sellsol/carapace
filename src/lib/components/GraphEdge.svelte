@@ -36,8 +36,10 @@
 		return { x1, y1, x2, y2, tipX, tipY, bx1, by1, bx2, by2 };
 	});
 
-	const labelPos = $derived({ x: (arrow.x1 + arrow.x2) / 2, y: (arrow.y1 + arrow.y2) / 2 });
-	const labelText = $derived(edge.prefix ? `${edge.prefix}:${edge.label}` : edge.label);
+	const labelPos = $derived({
+		x: (arrow.x1 + arrow.x2) / 2,
+		y: (arrow.y1 + arrow.y2) / 2
+	});
 </script>
 
 {#if edge.collectionEdge}
@@ -70,6 +72,12 @@
 		stroke-linejoin="round"
 		paint-order="stroke"
 	>
-		{labelText}
+		{#each edge.label.split("\n") as part, i}
+			{#if i === 0}
+				{part}
+			{:else}
+				<tspan x={labelPos.x} dy="1.2em">{part}</tspan>
+			{/if}
+		{/each}
 	</text>
 {/if}

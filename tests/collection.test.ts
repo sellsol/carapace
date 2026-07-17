@@ -159,7 +159,7 @@ describe("collection nodes", () => {
 			expect(relationEdge).toBeDefined();
 			expect(relationEdge!.source.uri).toBe("http://ex.com/C");
 			expect(relationEdge!.target.uri).toBe(collectionNodes[0].uri);
-			expect(relationEdge!.label).toBe("unionOf");
+			expect(relationEdge!.label).toBe("owl:unionOf");
 		});
 
 		it("simple intersection collection - creates collection node with collectionType intersection", () => {
@@ -327,7 +327,7 @@ describe("collection nodes", () => {
 			expect(relationEdge).toBeDefined();
 			expect(relationEdge!.source.uri).toBe("http://ex.com/C");
 			expect(relationEdge!.target.uri).toBe(collectionNodes[0].uri);
-			expect(relationEdge!.label).toBe("subClassOf");
+			expect(relationEdge!.label).toBe("rdfs:subClassOf");
 		});
 
 		// Note: Considering showing these as well, but hidden for now
@@ -387,12 +387,12 @@ describe("collection nodes", () => {
 			const relationEdges = edges.filter((e) => !e.collectionEdge);
 			expect(relationEdges).toHaveLength(2);
 
-			const unionEdge = relationEdges.find((e) => e.label === "unionOf");
+			const unionEdge = relationEdges.find((e) => e.label === "owl:unionOf");
 			expect(unionEdge).toBeDefined();
 			expect(unionEdge!.source.uri).toBe("b1");
 			expect(unionEdge!.target.collection).toBe(true);
 
-			const labelEdge = relationEdges.find((e) => e.label === "label");
+			const labelEdge = relationEdges.find((e) => e.label === "rdfs:label");
 			expect(labelEdge).toBeDefined();
 			expect(labelEdge!.source.uri).toBe("b1");
 			expect(labelEdge!.target.nodeType).toBe("literal");

@@ -35,8 +35,7 @@ export type Edge = {
 	id: string;
 	source: Node;
 	target: Node;
-	prefix: string | null;
-	label: string;
+	label: string; // includes any prefix here so multiple prefix-label pairs can be stored
 
 	collectionEdge: boolean;
 };

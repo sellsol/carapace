@@ -105,6 +105,25 @@ describe("named nodes", () => {
 		expect(edges[1].target.uri).toBe("http://ex.com/o");
 	});
 
+	it("reused subject and object - merges multiple predicates for same pair into label on one edge", () => {
+		const { nodes, edges } = build({
+			triples: [
+				quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p"), namedNode("http://ex.com/o")),
+				quad(
+					namedNode("http://ex.com/s"),
+					namedNode("http://www.w3.org/2000/01/rdf-schema#label"),
+					namedNode("http://ex.com/o")
+				)
+			],
+			namespacePrefixes: { "http://ex.com/": "ex" }
+		});
+
+		expect(nodes).toHaveLength(2);
+		expect(edges).toHaveLength(1);
+		expect(edges[0].label).toBe("ex:p\nrdfs:label");
+		expect(edges[0].label).toBe("ex:p\nrdfs:label");
+	});
+
 	it("internal definitions - resolves external only on nodes with no outgoing edges", () => {
 		const { nodes } = build({
 			triples: [
@@ -150,8 +169,7 @@ describe("named nodes", () => {
 			expect(target!.prefix).toBe("ex");
 			expect(target!.label).toBe("Baz");
 
-			expect(edges[0].prefix).toBe("ex");
-			expect(edges[0].label).toBe("bar");
+			expect(edges[0].label).toBe("ex:bar");
 		});
 
 		it("built-in prefix map - resolves prefix and localName on nodes and edge", () => {
@@ -177,8 +195,7 @@ describe("named nodes", () => {
 			expect(target!.prefix).toBe("xsd");
 			expect(target!.label).toBe("string");
 
-			expect(edges[0].prefix).toBe("rdfs");
-			expect(edges[0].label).toBe("label");
+			expect(edges[0].label).toBe("rdfs:label");
 		});
 	});
 
@@ -346,7 +363,9 @@ describe("named nodes", () => {
 	describe("settings", () => {
 		it("setting class hidden - remove untyped subject by class fallback", () => {
 			const { nodes, edges } = build({
-				triples: [quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p"), namedNode("http://ex.com/o"))],
+				triples: [
+					quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p"), namedNode("http://ex.com/o"))
+				],
 				settings: { hiddenEntityTypes: ["class"] }
 			});
 
@@ -390,7 +409,9 @@ describe("named nodes", () => {
 
 		it("setting instance hidden - preserve untyped subject by class fallback", () => {
 			const { nodes, edges } = build({
-				triples: [quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p"), namedNode("http://ex.com/o"))],
+				triples: [
+					quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p"), namedNode("http://ex.com/o"))
+				],
 				settings: { hiddenEntityTypes: ["instance"] }
 			});
 
@@ -403,7 +424,9 @@ describe("named nodes", () => {
 
 		it("setting predicate hidden - remove edge and object", () => {
 			const { nodes, edges } = build({
-				triples: [quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p"), namedNode("http://ex.com/o"))],
+				triples: [
+					quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p"), namedNode("http://ex.com/o"))
+				],
 				settings: { hiddenPredicateUris: ["http://ex.com/p"] }
 			});
 
