@@ -120,8 +120,45 @@ describe("named nodes", () => {
 
 		expect(nodes).toHaveLength(2);
 		expect(edges).toHaveLength(1);
+
+		expect(edges[0].source.uri).toBe("http://ex.com/s");
+		expect(edges[0].target.uri).toBe("http://ex.com/o");
 		expect(edges[0].label).toBe("ex:p\nrdfs:label");
 		expect(edges[0].label).toBe("ex:p\nrdfs:label");
+		expect(edges[0].collectionEdge).toBe(false);
+	});
+
+	it("self-loop - creates self-referencing edge for same subject and object on single predicate", () => {
+		const { nodes, edges } = build({
+			triples: [quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p"), namedNode("http://ex.com/s"))]
+		});
+
+		expect(nodes).toHaveLength(1);
+		expect(edges).toHaveLength(1);
+
+		expect(edges[0].source.id).toBe(edges[0].target.id);
+		expect(edges[0].source.uri).toBe("http://ex.com/s");
+		expect(edges[0].target.uri).toBe("http://ex.com/s");
+		expect(edges[0].label).toBe("p");
+		expect(edges[0].collectionEdge).toBe(false);
+	});
+
+	it("self-loop - creates self-referencing edge with merged predicate labels", () => {
+		const { nodes, edges } = build({
+			triples: [
+				quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p1"), namedNode("http://ex.com/s")),
+				quad(namedNode("http://ex.com/s"), namedNode("http://ex.com/p2"), namedNode("http://ex.com/s"))
+			]
+		});
+
+		expect(nodes).toHaveLength(1);
+		expect(edges).toHaveLength(1);
+
+		expect(edges[0].source.id).toBe(edges[0].target.id);
+		expect(edges[0].source.uri).toBe("http://ex.com/s");
+		expect(edges[0].target.uri).toBe("http://ex.com/s");
+		expect(edges[0].label).toBe("p1\np2");
+		expect(edges[0].collectionEdge).toBe(false);
 	});
 
 	it("internal definitions - resolves external only on nodes with no outgoing edges", () => {

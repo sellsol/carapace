@@ -129,6 +129,61 @@ describe("blank nodes", () => {
 		expect(edges[1].target.uri).toBe("http://ex.com/o");
 	});
 
+	it("reused subject and object - merges multiple predicates for same pair into label on one edge", () => {
+		const { nodes, edges } = build({
+			triples: [
+				quad(blankNode("b1"), namedNode("http://ex.com/p"), blankNode("b2")),
+				quad(blankNode("b1"), namedNode("http://www.w3.org/2000/01/rdf-schema#label"), blankNode("b2"))
+			],
+			settings: { hiddenEntityTypes: [] },
+			namespacePrefixes: { "http://ex.com/": "ex" }
+		});
+
+		expect(nodes).toHaveLength(2);
+		expect(edges).toHaveLength(1);
+
+		expect(edges[0].source.uri).toBe("b1");
+		expect(edges[0].target.uri).toBe("b2");
+		expect(edges[0].label).toBe("ex:p\nrdfs:label");
+		expect(edges[0].label).toBe("ex:p\nrdfs:label");
+		expect(edges[0].collectionEdge).toBe(false);
+	});
+
+	it("self-loop - creates self-referencing edge for same subject and object on single predicate", () => {
+		const { nodes, edges } = build({
+			triples: [quad(blankNode("b1"), namedNode("http://ex.com/p"), blankNode("b1"))],
+			settings: { hiddenEntityTypes: [] }
+		});
+
+		expect(nodes).toHaveLength(1);
+		expect(edges).toHaveLength(1);
+
+		expect(edges[0].source.id).toBe(edges[0].target.id);
+		expect(edges[0].source.uri).toBe("b1");
+		expect(edges[0].target.uri).toBe("b1");
+		expect(edges[0].label).toBe("p");
+		expect(edges[0].collectionEdge).toBe(false);
+	});
+
+	it("self-loop - creates self-referencing edge with merged predicate labels", () => {
+		const { nodes, edges } = build({
+			triples: [
+				quad(blankNode("b1"), namedNode("http://ex.com/p1"), blankNode("b1")),
+				quad(blankNode("b1"), namedNode("http://ex.com/p2"), blankNode("b1"))
+			],
+			settings: { hiddenEntityTypes: [] }
+		});
+
+		expect(nodes).toHaveLength(1);
+		expect(edges).toHaveLength(1);
+
+		expect(edges[0].source.id).toBe(edges[0].target.id);
+		expect(edges[0].source.uri).toBe("b1");
+		expect(edges[0].target.uri).toBe("b1");
+		expect(edges[0].label).toBe("p1\np2");
+		expect(edges[0].collectionEdge).toBe(false);
+	});
+
 	// Note: Current expected behaviour is to distinguish blank untyped external nodes with yellow colour
 	// Not too sure about this - could be less confusing to just set all blank nodes to internal
 	it("internal definitions - resolves external only on nodes with no outgoing edges", () => {

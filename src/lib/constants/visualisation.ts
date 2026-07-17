@@ -26,6 +26,7 @@ export const ARROW_INSET = 2;
 export const ARROW_SIZE = 8;
 export const ARROW_WIDTH_FACTOR = 0.4;
 export const EDGE_LABEL_FONT_SIZE = 11;
+export const EDGE_SELF_REF_RADIUS = 70;
 
 // nav
 export const ZOOM_MIN = 0.1;
