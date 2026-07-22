@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { parseTurtle } from "$lib/utils/turtle";
+
 import { DataFactory, build } from "./helpers";
 
 vi.mock("$lib/utils/settings", () => {
@@ -539,6 +541,30 @@ describe("named nodes", () => {
 			expect(edges).toHaveLength(0);
 
 			expect(nodes[0].uri).toBe("http://ex.com/s2");
+		});
+	});
+
+	describe("editing", () => {
+		it("duplicate external node unrelated - preserve duplicate external node position when another is inserted in front", () => {
+			const base = `@prefix ex: <http://ex.com/> .\nex:A ex:knows ex:Person .`;
+			const modified = `@prefix ex: <http://ex.com/> .\nex:B ex:knows ex:Person .\nex:A ex:knows ex:Person .`;
+
+			const graph1 = build({
+				triples: parseTurtle(base).triples,
+				settings: { hiddenEntityTypes: [], duplicateExternalNodes: true }
+			});
+			const externalNode1 = graph1.nodes.find((n) => n.external)!;
+
+			const graph2 = build({
+				triples: parseTurtle(modified).triples,
+				settings: { hiddenEntityTypes: [], duplicateExternalNodes: true },
+				existingNodes: [{ uri: externalNode1.uri, x: externalNode1.x, y: externalNode1.y }]
+			});
+
+			const externalNode2 = graph2.nodes.find((n) => n.uri === externalNode1.uri);
+			expect(externalNode2).toBeDefined();
+			expect(externalNode2!.x).toBe(externalNode1.x);
+			expect(externalNode2!.y).toBe(externalNode1.y);
 		});
 	});
 });

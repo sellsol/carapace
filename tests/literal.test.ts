@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { parseTurtle } from "$lib/utils/turtle";
+
 import { DataFactory, build } from "./helpers";
 
 vi.mock("$lib/utils/settings", () => {
@@ -102,6 +104,27 @@ describe("literal nodes", () => {
 
 			const source = nodes.find((n) => n.uri === "http://ex.com/s");
 			expect(source).toBeDefined();
+		});
+	});
+
+	describe("editing", () => {
+		it("literal node value - preserve literal node position when its literal value is edited", () => {
+			const base = `@prefix ex: <http://ex.com/> .\n[] ex:name "Alice" .`;
+			const modified = `@prefix ex: <http://ex.com/> .\n[] ex:name "Bob" .`;
+
+			const graph1 = build({ triples: parseTurtle(base).triples, settings: { hiddenEntityTypes: [] } });
+			const literalNode1 = graph1.nodes.find((n) => n.nodeType === "literal")!;
+
+			const graph2 = build({
+				triples: parseTurtle(modified).triples,
+				settings: { hiddenEntityTypes: [] },
+				existingNodes: [{ uri: literalNode1.uri, x: literalNode1.x, y: literalNode1.y }]
+			});
+
+			const literalNode2 = graph2.nodes.find((n) => n.nodeType === "literal")!;
+			expect(literalNode2).toBeDefined();
+			expect(literalNode2.x).toBe(literalNode2.x);
+			expect(literalNode2.y).toBe(literalNode2.y);
 		});
 	});
 });

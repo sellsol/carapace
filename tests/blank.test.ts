@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { parseTurtle } from "$lib/utils/turtle";
+
 import { DataFactory, build } from "./helpers";
 
 vi.mock("$lib/utils/settings", () => {
@@ -332,6 +334,49 @@ describe("blank nodes", () => {
 
 			expect(nodes).toHaveLength(0);
 			expect(edges).toHaveLength(0);
+		});
+	});
+
+	describe("editing", () => {
+		// Tests here use turtle parsing instead of writing out the triples
+		// to properly simulate resolution of n3's internal uri generation between runs
+
+		it("anonymous node unrelated - preserve anon node position when another anon node is inserted in front", () => {
+			const base = `@prefix ex: <http://ex.com/> .\n[] ex:name "Alice" .`;
+			const modified = `@prefix ex: <http://ex.com/> .\n[] ex:age 42 .\n[] ex:name "Alice" .`;
+
+			const graph1 = build({ triples: parseTurtle(base).triples, settings: { hiddenEntityTypes: [] } });
+			const alice1 = graph1.nodes.find((n) => n.blank)!;
+
+			const graph2 = build({
+				triples: parseTurtle(modified).triples,
+				settings: { hiddenEntityTypes: [] },
+				existingNodes: [{ uri: alice1.uri, x: alice1.x, y: alice1.y }]
+			});
+
+			const alice2 = graph2.nodes.find((n) => n.uri === alice1.uri);
+			expect(alice2).toBeDefined();
+			expect(alice2!.x).toBe(alice1.x);
+			expect(alice2!.y).toBe(alice1.y);
+		});
+
+		it("anonymous node neighbour - preserve anon node position when related literal value is edited", () => {
+			const base = `@prefix ex: <http://ex.com/> .\n[] ex:name "Alice" .`;
+			const modified = `@prefix ex: <http://ex.com/> .\n[] ex:name "Bob" .`;
+
+			const graph1 = build({ triples: parseTurtle(base).triples, settings: { hiddenEntityTypes: [] } });
+			const alice1 = graph1.nodes.find((n) => n.blank)!;
+
+			const graph2 = build({
+				triples: parseTurtle(modified).triples,
+				settings: { hiddenEntityTypes: [] },
+				existingNodes: [{ uri: alice1.uri, x: alice1.x, y: alice1.y }] // Note: simulates what currently happens with hardcoding, may or may not need to improve this later
+			});
+
+			const alice2 = graph2.nodes.find((n) => n.uri === alice1.uri);
+			expect(alice2).toBeDefined();
+			expect(alice2!.x).toBe(alice1.x);
+			expect(alice2!.y).toBe(alice1.y);
 		});
 	});
 });
