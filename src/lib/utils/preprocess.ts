@@ -1,4 +1,4 @@
-import type { Quad } from "n3";
+import type { Quad, Term } from "n3";
 
 import {
 	INFERRED_TYPES,
@@ -33,10 +33,12 @@ export class Preprocessor {
 			this.digestChain(quad);
 			this.digestCollection(quad);
 			this.digestType(quad);
+			this.digestFingerprint(quad);
 		}
 
 		this.resolveBridges();
 		this.resolveCollections();
+		this.resolveStableKeys();
 	}
 
 	private getDescriptor(uri: string): NodeDescriptor {
@@ -140,6 +142,18 @@ export class Preprocessor {
 		}
 	}
 
+	private digestFingerprint(quad: Quad) {
+		const labelledAnonUriPattern = /^n3-\d+$/;
+		if (quad.subject.termType === "BlankNode" && labelledAnonUriPattern.test(quad.subject.value)) {
+			const d = this.getDescriptor(quad.subject.value);
+			(d.fingerprintParts ??= []).push(`${quad.predicate.value}|${this.stableTermKey(quad.object)}`);
+		}
+		if (quad.object.termType === "BlankNode" && labelledAnonUriPattern.test(quad.object.value)) {
+			const d = this.getDescriptor(quad.object.value);
+			(d.fingerprintParts ??= []).push(`${this.stableTermKey(quad.subject)}|${quad.predicate.value}`);
+		}
+	}
+
 	private resolveBridges() {
 		for (const [uri, descriptor] of this.nodeDescriptors) {
 			if (!descriptor.isCollection || descriptor.isList) continue;
@@ -184,5 +198,41 @@ export class Preprocessor {
 			const collectionType = headDescriptor.collectionType ?? "list";
 			this.collectionDescriptors.push({ headUri, collectionType, members });
 		}
+	}
+
+	private resolveStableKeys() {
+		const labelledBlankUriPattern = /^b\d+_(.+)$/;
+		const labelledAnonUriPattern = /^n3-\d+$/;
+		const fingerprintTally = new Map<string, number>();
+
+		for (const [uri, descriptor] of this.nodeDescriptors) {
+			const match = labelledBlankUriPattern.exec(uri);
+			if (match) {
+				descriptor.stableKey = match[1];
+			} else if (labelledAnonUriPattern.test(uri)) {
+				const parts = (descriptor.fingerprintParts ?? []).sort();
+				const fingerprint = parts.join(";");
+
+				let stableKey = `anon-${this.hashString(fingerprint)}`;
+				const count = fingerprintTally.get(stableKey) ?? 0;
+				if (count > 0) stableKey = `${stableKey}-${count}`;
+				fingerprintTally.set(stableKey, count + 1);
+
+				descriptor.stableKey = stableKey;
+			}
+		}
+	}
+
+	private stableTermKey(term: Term): string {
+		if (term.termType === "NamedNode") return term.value;
+		if (term.termType === "Literal") return "_@";
+		const match = term.value.match(/^b\d+_(.+)$/);
+		return match ? match[1] : "_:";
+	}
+
+	private hashString(s: string): string {
+		let hash = 5381;
+		for (let i = 0; i < s.length; i++) hash = (hash << 5) + hash + s.charCodeAt(i);
+		return (hash >>> 0).toString(36);
 	}
 }

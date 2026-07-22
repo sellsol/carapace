@@ -42,6 +42,10 @@ export class Builder {
 		this.collectionDescriptors = collectionDescriptors;
 	}
 
+	private resolveUriToStable(uri: string): string {
+		return this.nodeDescriptors.get(uri)?.stableKey ?? uri;
+	}
+
 	build(): { nodes: Node[]; edges: Edge[] } {
 		this.processCollections();
 		this.processRelations();
@@ -151,7 +155,9 @@ export class Builder {
 
 		let position = this.cachedPositions.get(uri)?.shift();
 		if (!position && nearbyUri) {
-			const nearbyPosition = this.cachedPositions.get(nearbyUri)?.[0] ?? this.uriToNode.get(nearbyUri);
+			const stableNearbyUri = this.resolveUriToStable(nearbyUri);
+			const nearbyPosition =
+				this.cachedPositions.get(stableNearbyUri)?.[0] ?? this.uriToNode.get(stableNearbyUri);
 			if (nearbyPosition) {
 				position = {
 					x: nearbyPosition.x + (Math.random() - 0.5) * 300,
@@ -182,13 +188,15 @@ export class Builder {
 	}
 
 	private addBlankNode(uri: string, nearbyUri?: string): Node {
-		if (this.uriToNode.has(uri)) return this.uriToNode.get(uri)!;
+		const stableUri = this.resolveUriToStable(uri);
+		if (this.uriToNode.has(stableUri)) return this.uriToNode.get(stableUri)!;
 
 		const descriptor = this.nodeDescriptors.get(uri);
 
-		let position = this.cachedPositions.get(uri)?.shift();
+		let position = this.cachedPositions.get(stableUri)?.shift();
 		if (!position && nearbyUri) {
-			const nearbyPosition = this.cachedPositions.get(nearbyUri)?.[0] ?? this.uriToNode.get(nearbyUri);
+			const stableNearby = this.resolveUriToStable(nearbyUri);
+			const nearbyPosition = this.cachedPositions.get(stableNearby)?.[0] ?? this.uriToNode.get(stableNearby);
 			if (nearbyPosition) {
 				position = {
 					x: nearbyPosition.x + (Math.random() - 0.5) * 300,
@@ -202,7 +210,7 @@ export class Builder {
 
 			const node: Node = {
 				id: `node-${this.nextNodeId++}`,
-				uri,
+				uri: stableUri,
 				label: "",
 				prefix: null,
 				nodeType: descriptor.nodeType,
@@ -217,14 +225,14 @@ export class Builder {
 				bodyLines: [],
 				badgeWidth: 0
 			};
-			this.uriToNode.set(uri, node);
+			this.uriToNode.set(stableUri, node);
 			return node;
 		} else {
 			const diameter = BLANK_NODE_RADIUS * 2;
 
 			const node: Node = {
 				id: `node-${this.nextNodeId++}`,
-				uri,
+				uri: stableUri,
 				label: "",
 				prefix: null,
 				nodeType: "blank",
@@ -239,20 +247,21 @@ export class Builder {
 				bodyLines: [],
 				badgeWidth: 0
 			};
-			this.uriToNode.set(uri, node);
+			this.uriToNode.set(stableUri, node);
 			return node;
 		}
 	}
 
 	private addCollectionNode(uri: string, collectionType: CollectionType): Node {
-		if (this.uriToNode.has(uri)) return this.uriToNode.get(uri)!;
+		const stableUri = this.resolveUriToStable(uri);
+		if (this.uriToNode.has(stableUri)) return this.uriToNode.get(stableUri)!;
 
-		const position = this.cachedPositions.get(uri)?.shift();
+		const position = this.cachedPositions.get(stableUri)?.shift();
 		const diameter = COLLECTION_NODE_RADIUS * 2;
 
 		const node: Node = {
 			id: `node-${this.nextNodeId++}`,
-			uri,
+			uri: stableUri,
 			label: "",
 			prefix: null,
 			nodeType: "list",
@@ -267,13 +276,14 @@ export class Builder {
 			bodyLines: [],
 			badgeWidth: 0
 		};
-		this.uriToNode.set(uri, node);
+		this.uriToNode.set(stableUri, node);
 		return node;
 	}
 
 	private addLiteralNode(value: string, subjectUri: string, predicateUri: string): Node {
-		const key = `${subjectUri}|${predicateUri}|${value}`;
-		const groupKey = `${subjectUri}|${predicateUri}`;
+		const stableSubjectUri = this.resolveUriToStable(subjectUri);
+		const key = `${stableSubjectUri}|${predicateUri}|${value}`;
+		const groupKey = `${stableSubjectUri}|${predicateUri}`;
 		const dimensions = measureNodeDimensions(value, null, "literal", false);
 
 		let position = this.cachedPositions.get(key)?.shift();
@@ -286,7 +296,8 @@ export class Builder {
 					position = unclaimed.position;
 				}
 			} else {
-				const nearbyPosition = this.cachedPositions.get(subjectUri)?.[0] ?? this.uriToNode.get(subjectUri);
+				const nearbyPosition =
+					this.cachedPositions.get(stableSubjectUri)?.[0] ?? this.uriToNode.get(stableSubjectUri);
 				if (nearbyPosition) {
 					position = {
 						x: nearbyPosition.x + (Math.random() - 0.5) * 300,
@@ -318,14 +329,16 @@ export class Builder {
 	}
 
 	private addExternalNode(uri: string, type: EntityType, subjectUri: string, predicateUri: string): Node {
-		const key = `${subjectUri}|${predicateUri}|${uri}`;
+		const stableSubjectUri = this.resolveUriToStable(subjectUri);
+		const key = `${stableSubjectUri}|${predicateUri}|${uri}`;
 		const label = resolveLocalName(uri);
 		const prefix = resolvePrefix(uri, this.namespacePrefixes);
 		const dimensions = measureNodeDimensions(label, prefix, type, false);
 
 		let position = this.cachedPositions.get(key)?.shift();
 		if (!position) {
-			const nearbyPosition = this.cachedPositions.get(subjectUri)?.[0] ?? this.uriToNode.get(subjectUri);
+			const nearbyPosition =
+				this.cachedPositions.get(stableSubjectUri)?.[0] ?? this.uriToNode.get(stableSubjectUri);
 			if (nearbyPosition) {
 				position = {
 					x: nearbyPosition.x + (Math.random() - 0.5) * 300,

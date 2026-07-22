@@ -1,6 +1,9 @@
 import type { CollectionType, EntityType } from "$lib/types/graph";
 
 export class NodeDescriptor {
+	stableKey?: string;
+	fingerprintParts?: string[];
+
 	nodeType: EntityType | null = null;
 	isSubject = false;
 	isLocal = false;
