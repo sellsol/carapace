@@ -466,6 +466,10 @@
 		});
 	});
 
+	$effect(() => {
+		if (!searchOpen) containerEl?.focus({ preventScroll: true });
+	});
+
 	onMount(() => {
 		currentTabId = tabsStore.activeTabId;
 		tabsStore.exportSvg = () => exportSvg(svgEl, nodes, transform);
@@ -553,7 +557,7 @@
 		</g>
 	</svg>
 
-	<GraphSearchbar {nodes} {searchOpen} onfocusNode={focusNode} />
+	<GraphSearchbar {nodes} bind:searchOpen onfocusNode={focusNode} />
 
 	<div class="absolute bottom-4 right-4 flex gap-2">
 		<Button
