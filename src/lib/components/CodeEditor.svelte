@@ -41,6 +41,9 @@
 		".cm-selectionBackground": {
 			outline: "none"
 		},
+		".cm-scroller::-webkit-scrollbar-corner": {
+			backgroundColor: "var(--base)"
+		},
 		"&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground": {
 			outline: "none"
 		}
