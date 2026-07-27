@@ -1,6 +1,7 @@
 <script lang="ts">
 	import GraphEdge from "$lib/components/GraphEdge.svelte";
 	import GraphNode from "$lib/components/GraphNode.svelte";
+	import GraphSearchbar from "$lib/components/GraphSearchbar.svelte";
 	import type { Quad } from "n3";
 	import { onDestroy, onMount } from "svelte";
 
@@ -31,6 +32,7 @@
 	import MousePointer2 from "@lucide/svelte/icons/mouse-pointer-2";
 	import Plus from "@lucide/svelte/icons/plus";
 	import Scan from "@lucide/svelte/icons/scan";
+	import Search from "@lucide/svelte/icons/search";
 	import SquareMousePointer from "@lucide/svelte/icons/square-mouse-pointer";
 
 	interface Props {
@@ -65,6 +67,8 @@
 	let boxSelectArea = $state<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 	let selectedNodeIds = $state<Set<string>>(new Set());
 	let selectedNodeStartPositions = $state<Map<string, { x: number; y: number }>>(new Map());
+
+	let searchOpen = $state(false);
 
 	let dragStartX = 0;
 	let dragStartY = 0;
@@ -287,6 +291,29 @@
 		transform.y = (height - graphHeight * transform.k) / 2 - minY * transform.k;
 	}
 
+	function toggleSearch() {
+		searchOpen = !searchOpen;
+		if (!searchOpen) {
+			selectedNodeIds = new Set();
+			containerEl?.focus({ preventScroll: true });
+		}
+	}
+
+	function focusNode(node: Node) {
+		selectedNodeIds = new Set([node.id]);
+
+		if (transform.k < 0.5) transform.k = 0.5;
+		transform.x = width / 2 - (node.x + node.width / 2) * transform.k;
+		transform.y = height / 2 - (node.y + node.height / 2) * transform.k;
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if ((event.ctrlKey || event.metaKey) && event.key === "f") {
+			event.preventDefault();
+			toggleSearch();
+		}
+	}
+
 	function handleWheel(event: WheelEvent) {
 		event.preventDefault();
 
@@ -341,7 +368,7 @@
 			}
 
 			selectedNodeIds = next;
-		} else if (!dragged && boxSelectMode) {
+		} else if (!dragged) {
 			selectedNodeIds = new Set();
 		}
 
@@ -353,6 +380,7 @@
 	function handleMouseDown(event: MouseEvent) {
 		if (event.target !== event.currentTarget) return;
 
+		containerEl?.focus({ preventScroll: true });
 		dragStartX = event.clientX;
 		dragStartY = event.clientY;
 		dragStartTx = transform.x;
@@ -470,7 +498,12 @@
 	});
 </script>
 
-<div bind:this={containerEl} class="bg-mantle relative w-full h-full overflow-hidden select-none {className}">
+<div
+	bind:this={containerEl}
+	class="bg-mantle relative w-full h-full overflow-hidden focus:outline-none select-none {className}"
+	tabindex="-1"
+	onkeydowncapture={handleKeydown}
+>
 	{#if tabsStore.graphLoading}
 		<div class="absolute inset-0 bg-base/75 flex items-center justify-center z-10 gap-1">
 			<Spinner />
@@ -511,7 +544,7 @@
 				<GraphNode
 					{node}
 					locked={lockedMode}
-					selected={boxSelectMode && selectedNodeIds.has(node.id)}
+					selected={selectedNodeIds.has(node.id)}
 					onDrag={handleNodeDrag}
 					onDragStart={handleNodeDragStart}
 					onDragEnd={handleNodeDragEnd}
@@ -520,11 +553,24 @@
 		</g>
 	</svg>
 
+	<GraphSearchbar {nodes} {searchOpen} onfocusNode={focusNode} />
+
 	<div class="absolute bottom-4 right-4 flex gap-2">
 		<Button
 			variant="outline"
 			size="sm"
-			class="h-6 w-6 {boxSelectMode ? 'bg-blue/15 border-blue' : ''}"
+			class="h-6 w-6 {searchOpen ? 'bg-blue/40 dark:bg-lavender/40 dark:hover:bg-lavender/50 border-blue' : ''}"
+			onclick={toggleSearch}
+			aria-label="Search nodes"
+		>
+			<Search class="h-2.5 w-2.5" />
+		</Button>
+		<Button
+			variant="outline"
+			size="sm"
+			class="h-6 w-6 {boxSelectMode
+				? 'bg-blue/40 dark:bg-lavender/40 dark:hover:bg-lavender/50 border-blue'
+				: ''}"
 			onclick={toggleSelectMode}
 			aria-label={boxSelectMode ? "Switch to pan mode" : "Switch to select mode"}
 		>
@@ -534,10 +580,11 @@
 				<MousePointer2 class="h-2.5 w-2.5" />
 			{/if}
 		</Button>
+
 		<Button
 			variant="outline"
 			size="sm"
-			class="h-6 w-6"
+			class="h-6 w-6 {lockedMode ? 'bg-blue/40 dark:bg-lavender/40 dark:hover:bg-lavender/50 border-blue' : ''}"
 			onclick={toggleLockMode}
 			aria-label={lockedMode ? "Unlock graph" : "Lock graph"}
 		>
