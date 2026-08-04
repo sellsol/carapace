@@ -4,6 +4,8 @@ import { toast } from "svelte-sonner";
 import { SAMPLE_TURTLE } from "$lib/constants/sample";
 import { createLogger } from "$lib/logger";
 import type { GraphSettings, Tab } from "$lib/types/tabs";
+import type { LineMapping } from "$lib/utils/lines";
+import { computeLineMapping } from "$lib/utils/lines";
 import { defaultGraphSettings } from "$lib/utils/settings";
 import { parseTurtle } from "$lib/utils/turtle";
 
@@ -22,6 +24,10 @@ class TabsStore {
 	activeEdgeCount = $state(0);
 
 	exportSvg = $state<(() => void) | null>(null);
+
+	activeLineMapping = $state<LineMapping | null>(null);
+	editorCursorLine = $state(1);
+	selectedNodeUri = $state<string | null>(null);
 
 	private saveTimeout: ReturnType<typeof setTimeout> | null = null;
 	private parseTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -51,6 +57,7 @@ class TabsStore {
 		this.activeTabId = newTab.id;
 		this.activeTriples = null;
 		this.activePrefixMap = {};
+		this.activeLineMapping = null;
 		this.activeError = "";
 		this.graphLoading = true;
 		logger.debug("Tab Added", { id: newTab.id, name: newTab.name });
@@ -70,6 +77,7 @@ class TabsStore {
 		this.activeTriples = tab.parsedTriples ?? null;
 		this.activePrefixMap = tab.parsedPrefixMap ?? {};
 		this.activeError = "";
+		this.refreshLineMapping();
 
 		localStorage.setItem("carapace_activeTabId", id);
 		logger.debug("Tab Switched", { id: tab.id, name: tab.name });
@@ -102,6 +110,7 @@ class TabsStore {
 			this.activeTriples = newTab.parsedTriples ?? null;
 			this.activePrefixMap = newTab.parsedPrefixMap ?? {};
 			this.activeError = "";
+			this.refreshLineMapping();
 			logger.debug("Tab Switched", { id: newTab.id, name: newTab.name });
 		}
 
@@ -187,6 +196,20 @@ class TabsStore {
 		this.activeTriples = result.triples;
 		tab.parsedPrefixMap = result.prefixMap;
 		this.activePrefixMap = result.prefixMap;
+		this.refreshLineMapping();
+	}
+
+	private refreshLineMapping() {
+		const tab = this.getActiveTab();
+		if (!tab || !tab.parsedTriples || tab.parsedTriples.length === 0) {
+			this.activeLineMapping = null;
+			return;
+		}
+		try {
+			this.activeLineMapping = computeLineMapping(tab.ttlContent, tab.parsedPrefixMap ?? {});
+		} catch {
+			this.activeLineMapping = null;
+		}
 	}
 
 	updateActiveTabSettings(newSettings: Partial<GraphSettings>) {
@@ -248,6 +271,7 @@ class TabsStore {
 				this.activeTriples = activeTab.parsedTriples ?? null;
 				this.activePrefixMap = activeTab.parsedPrefixMap ?? {};
 			}
+			this.refreshLineMapping();
 			logger.info(`Tabs Loaded from Storage - ${this.tabs.length} Tabs`);
 		} catch (error) {
 			logger.error("Tabs Load from Storage:", error);

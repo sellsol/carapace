@@ -10,6 +10,8 @@
 	import { mode } from "mode-watcher";
 	import { onMount } from "svelte";
 
+	import { tabsStore } from "$lib/stores/tabs.svelte";
+
 	interface Props {
 		value: string;
 		lockedMode?: boolean;
@@ -20,6 +22,19 @@
 	let editorView: EditorView;
 	let skipNextUpdate = false;
 	const editableCompartment = new Compartment();
+
+	export function scrollToLine(line: number) {
+		if (!editorView) return;
+
+		const doc = editorView.state.doc;
+		const targetLine = Math.min(Math.max(line, 1), doc.lines);
+		const pos = doc.line(targetLine).from;
+		editorView.dispatch({
+			selection: { anchor: pos },
+			effects: EditorView.scrollIntoView(pos, { y: "center" })
+		});
+		editorView.focus();
+	}
 
 	const editorTheme = EditorView.theme({
 		"&": {
@@ -60,6 +75,7 @@
 				if (update.docChanged && !skipNextUpdate) {
 					value = update.state.doc.toString();
 				}
+				tabsStore.editorCursorLine = update.state.doc.lineAt(update.state.selection.main.head).number;
 			})
 		];
 		extensions.splice(2, 0, mode.current === "dark" ? catppuccinMocha : materialLight);
@@ -78,6 +94,8 @@
 			state,
 			parent: editorElement
 		});
+
+		tabsStore.editorCursorLine = editorView.state.doc.lineAt(editorView.state.selection.main.head).number;
 
 		return () => {
 			editorView.destroy();
