@@ -51,6 +51,7 @@
 	let transform = $state(tabsStore.getActiveTab()?.camera ?? { x: 0, y: 0, k: 1 });
 
 	let nodes = $state<Node[]>([]);
+	export { nodes }; // exposed for line to node checking in main page. Might be good to have nodes in tabs store instead??
 	let edges = $state<Edge[]>([]);
 	let currentTabId = "";
 
@@ -307,6 +308,14 @@
 		transform.y = height / 2 - (node.y + node.height / 2) * transform.k;
 	}
 
+	export function focusGraphNode(uri: string): boolean {
+		const node = nodes.find((n) => n.uri === uri);
+		if (!node) return false;
+
+		focusNode(node);
+		return true;
+	}
+
 	function handleKeydown(event: KeyboardEvent) {
 		if ((event.ctrlKey || event.metaKey) && event.key === "f") {
 			event.preventDefault();
@@ -470,6 +479,12 @@
 		if (!searchOpen) containerEl?.focus({ preventScroll: true });
 	});
 
+	$effect(() => {
+		const selected = Array.from(selectedNodeIds);
+		tabsStore.selectedNodeUri =
+			selected.length === 1 ? (nodes.find((n) => n.id === selected[0])?.uri ?? null) : null;
+	});
+
 	onMount(() => {
 		currentTabId = tabsStore.activeTabId;
 		tabsStore.exportSvg = () => exportSvg(svgEl, nodes, transform);
@@ -499,6 +514,7 @@
 		savePositions();
 		tabsStore.flushSave();
 		tabsStore.exportSvg = null;
+		tabsStore.selectedNodeUri = null;
 	});
 </script>
 

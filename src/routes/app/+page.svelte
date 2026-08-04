@@ -10,14 +10,45 @@
 	import { SAMPLE_TURTLE } from "$lib/constants/sample";
 	import { createLogger } from "$lib/logger";
 	import { tabsStore } from "$lib/stores/tabs.svelte";
+	import { lineForNodeUri } from "$lib/utils/lines";
 
+	import { Button } from "$lib/components/ui/button";
 	import * as Resizable from "$lib/components/ui/resizable/index.js";
+	import ArrowLeft from "@lucide/svelte/icons/arrow-left";
+	import ArrowRight from "@lucide/svelte/icons/arrow-right";
 
 	const logger = createLogger("app");
 	let editorValue = $state("");
 	let editorMode = $state<"code" | "settings">("code");
 	let isMobile = $state(false);
 	let lockedMode = $derived(tabsStore.getActiveTab()?.locked ?? false);
+
+	let codeEditor = $state<ReturnType<typeof CodeEditor>>();
+	let graphVis = $state<ReturnType<typeof GraphVisualisation>>();
+
+	const goToNodeUri = $derived(
+		editorMode === "code" && graphVis
+			? (tabsStore.activeLineMapping?.lineToUris
+					.get(tabsStore.editorCursorLine)
+					?.find((uri) => graphVis!.nodes.some((n) => n.uri === uri)) ?? null)
+			: null
+	);
+	const goToLineTarget = $derived(
+		editorMode === "code" && codeEditor && tabsStore.selectedNodeUri
+			? lineForNodeUri(tabsStore.selectedNodeUri, tabsStore.activeLineMapping)
+			: null
+	);
+
+	const goToNodeDisabled = $derived(!goToNodeUri);
+	const goToLineDisabled = $derived(!goToLineTarget);
+
+	function handleGoToNode() {
+		if (goToNodeUri) graphVis?.focusGraphNode(goToNodeUri);
+	}
+
+	function handleGoToLine() {
+		if (goToLineTarget) codeEditor?.scrollToLine(goToLineTarget);
+	}
 
 	function toggleSettings() {
 		editorMode = editorMode === "code" ? "settings" : "code";
@@ -90,7 +121,7 @@
 				<div class="flex-1 overflow-hidden">
 					{#key tabsStore.activeTabId + editorMode}
 						{#if editorMode === "code"}
-							<CodeEditor bind:value={editorValue} {lockedMode} />
+							<CodeEditor bind:value={editorValue} bind:this={codeEditor} {lockedMode} />
 						{:else}
 							<GraphSettings />
 						{/if}
@@ -99,7 +130,36 @@
 			</div>
 		</Resizable.Pane>
 
-		<Resizable.Handle withHandle />
+		<Resizable.Handle>
+			<div
+				class="pointer-events-none absolute inset-y-0 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center justify-center gap-1.5"
+			>
+				<Button
+					variant="outline"
+					size="icon-sm"
+					class="pointer-events-auto"
+					disabled={goToNodeDisabled}
+					title="Go to node at editor cursor line"
+					onmousedown={(e) => e.stopPropagation()}
+					ontouchstart={(e) => e.stopPropagation()}
+					onclick={handleGoToNode}
+				>
+					<ArrowRight />
+				</Button>
+				<Button
+					variant="outline"
+					size="icon-sm"
+					class="pointer-events-auto"
+					disabled={goToLineDisabled}
+					title="Go to editor line of selected node"
+					onmousedown={(e) => e.stopPropagation()}
+					ontouchstart={(e) => e.stopPropagation()}
+					onclick={handleGoToLine}
+				>
+					<ArrowLeft />
+				</Button>
+			</div>
+		</Resizable.Handle>
 
 		<Resizable.Pane defaultSize={50} minSize={20}>
 			<div class="h-full flex flex-1 flex-col overflow-hidden">
@@ -109,6 +169,7 @@
 							triples={tabsStore.activeTriples}
 							prefixMap={tabsStore.activePrefixMap}
 							reloadTrigger={tabsStore.graphReloadCount}
+							bind:this={graphVis}
 							class="h-full"
 						/>
 					{/if}

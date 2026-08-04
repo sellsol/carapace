@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as ResizablePrimitive from "paneforge";
+	import type { Snippet } from "svelte";
 
 	import { type WithoutChildrenOrChild, cn } from "$lib/utils.js";
 
@@ -9,9 +10,11 @@
 		ref = $bindable(null),
 		class: className,
 		withHandle = false,
+		children,
 		...restProps
 	}: WithoutChildrenOrChild<ResizablePrimitive.PaneResizerProps> & {
 		withHandle?: boolean;
+		children?: Snippet;
 	} = $props();
 </script>
 
@@ -29,4 +32,5 @@
 			<GripVerticalIcon class="size-2.5" />
 		</div>
 	{/if}
+	{@render children?.()}
 </ResizablePrimitive.PaneResizer>
