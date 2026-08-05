@@ -22,11 +22,10 @@
 - **Live Visualisation Updates:** Code editor updates the associated nodes in the graph as changes are made.
 - **Syntax Highlighting:** Turtle file syntax highlighting supported by Codemirror.
 - **Multiple Files:** Easily switch between multiple TTL files with independent graph settings.
-- **Session Persistence:** Tabs, settings, and node positions are saved to the browser and restored on reload.
-- **Graph Controls:** Pan, zoom and scroll within the graph visualisation. Drag nodes to manually rearrange. Box select or ctrl/cmd + click to move multiple nodes at once. Lock node positions to maintain a manually arranged layout across tab switches.
+- **Graph Controls:** Pan, zoom and scroll within the graph visualisation. Drag nodes to manually rearrange. Box select or ctrl/cmd + click to move multiple nodes at once. Lock node positions to maintain a manually arranged layout.
 - **Fine-Grained Visualiser Settings:** Toggle visibility of nodes by entity types, and blacklist namespaces, predicates, or instances of types.
-- **External Node Handling:** Marks nodes from external vocabularies with distinct colours and node headers. Settings allow toggling of external nodes duplication for a cleaner graph.
-- **Export as CSV:** Export to a high-quality visualisation that fits to the graph's bounding box.
+- **Search and Node-Line Mappings:** Searchbars in both the graph and editor. Buttons on the separator allow for line-to-node and node-to-line jumps based on selected cursor line or selected node.
+- **Export as SVG:** Export to a high-quality visualisation that fits to the graph's bounding box.
 - **Export/ Import State:** Export and import the state of TTL, graph and settings together to pick up exactly where you left off.
 - **Light/ Dark Mode:** Good looking light and dark modes.
 
@@ -37,13 +36,6 @@
 - **Code Editor:** CodeMirror 6 with Turtle plugin and editor themes
 - **Turtle:** N3.js Turtle parser
 - **UI:** Shadcn-Svelte via Bits-UI, Svelte-Lucide for icons
-
-## Roadmap
-
-- **Richer OWL Node and Edge Visuals:** More custom visuals for OWL concepts to better indicate meaning.
-- **RDF/ XML Import:** Import RDF/ XML file as an alternative to TTL file import.
-- **Line to Node Sync:** Button to pan to node corresponding to current line in code editor.
-- **Setting Whitelists:** Alternative to current settings lists, allowing the user to whitelist instead of blacklist namespaces, predicates, etc.
 
 ## Motivation
 
