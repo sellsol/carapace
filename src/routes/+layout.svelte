@@ -22,10 +22,6 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Carapace - Turtle File Graph Visualiser</title>
-</svelte:head>
-
 <div class="h-screen flex flex-col bg-background">
 	<header class="h-12 border-b bg-card flex items-center px-4">
 		<Turtle class="h-7 w-7 pr-1"></Turtle>
