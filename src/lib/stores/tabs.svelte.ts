@@ -273,7 +273,8 @@ class TabsStore {
 						hiddenNamespaces: [...defaults.hiddenNamespaces],
 						hiddenEntityTypes: [...defaults.hiddenEntityTypes],
 						hiddenPredicateUris: [...defaults.hiddenPredicateUris],
-						hiddenInstanceOfUris: [...defaults.hiddenInstanceOfUris]
+						hiddenInstanceOfUris: [...defaults.hiddenInstanceOfUris],
+						nodeNamePredicate: ""
 					};
 					delete (tab as Record<string, unknown>).graphState;
 				}

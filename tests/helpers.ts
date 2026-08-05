@@ -17,7 +17,8 @@ export function defaultSettings(): GraphSettings {
 		hiddenNamespaces: [RDF_NS, RDFS_NS, OWL_NS],
 		hiddenEntityTypes: ["blank"],
 		hiddenPredicateUris: [],
-		hiddenInstanceOfUris: [OWL_NS + "Ontology"]
+		hiddenInstanceOfUris: [OWL_NS + "Ontology"],
+		nodeNamePredicate: ""
 	};
 }
 

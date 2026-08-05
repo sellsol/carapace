@@ -12,7 +12,7 @@ import type { CollectionDescriptor } from "$lib/types/processor";
 import { NodeDescriptor } from "$lib/types/processor";
 import type { GraphSettings } from "$lib/types/tabs";
 import type { LineMapping } from "$lib/utils/lines";
-import { classifyUriType } from "$lib/utils/ontology";
+import { classifyUriType, resolveLocalName } from "$lib/utils/ontology";
 import { inHiddenNamespace } from "$lib/utils/settings";
 
 export class Preprocessor {
@@ -36,6 +36,7 @@ export class Preprocessor {
 			this.digestChain(quad);
 			this.digestCollection(quad);
 			this.digestType(quad);
+			this.digestName(quad);
 			this.digestFingerprint(quad);
 		}
 
@@ -143,6 +144,18 @@ export class Preprocessor {
 		if (!objectDescriptor.nodeType && !objectDescriptor.isHidden && !inHiddenNamespace(quad.object.value)) {
 			objectDescriptor.nodeType = classifyUriType(quad.object.value) ?? inference.objectType;
 		}
+	}
+
+	private digestName(quad: Quad) {
+		if (!this.settings.nodeNamePredicate) return;
+		if (quad.predicate.value !== this.settings.nodeNamePredicate) return;
+		if (quad.subject.termType !== "NamedNode") return;
+
+		const subjectDescriptor = this.getDescriptor(quad.subject.value);
+		if (subjectDescriptor.nameOverride) return;
+
+		subjectDescriptor.nameOverride =
+			quad.object.termType === "Literal" ? quad.object.value : resolveLocalName(quad.object.value);
 	}
 
 	private digestFingerprint(quad: Quad) {

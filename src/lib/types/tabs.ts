@@ -5,11 +5,11 @@ import type { LineMapping } from "$lib/utils/lines";
 
 export type GraphSettings = {
 	duplicateExternalNodes: boolean;
-	// showLabels: boolean; // TODO: add back later with synx to hiddenPredicateUris
 	hiddenNamespaces: string[];
 	hiddenEntityTypes: EntityType[];
 	hiddenPredicateUris: string[];
 	hiddenInstanceOfUris: string[];
+	nodeNamePredicate: string;
 };
 
 export type Tab = {

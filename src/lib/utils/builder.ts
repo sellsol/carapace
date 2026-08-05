@@ -104,6 +104,7 @@ export class Builder {
 			}
 
 			// Create edge and target node
+			if (quad.predicate.value === this.settings.nodeNamePredicate) continue;
 			if (this.settings.hiddenPredicateUris.includes(quad.predicate.value)) continue;
 			if (quad.object.termType === "BlankNode") {
 				if (this.settings.hiddenEntityTypes.includes("blank")) continue;
@@ -150,7 +151,7 @@ export class Builder {
 
 		const descriptor = this.nodeDescriptors.get(uri);
 		const type = descriptor?.nodeType ?? classifyUriType(uri) ?? "class";
-		const label = resolveLocalName(uri);
+		const label = descriptor?.nameOverride ?? resolveLocalName(uri);
 		const prefix = resolvePrefix(uri, this.namespacePrefixes);
 		const dimensions = measureNodeDimensions(label, prefix, type, false);
 
@@ -332,7 +333,7 @@ export class Builder {
 	private addExternalNode(uri: string, type: EntityType, subjectUri: string, predicateUri: string): Node {
 		const stableSubjectUri = this.resolveUriToStable(subjectUri);
 		const key = `${stableSubjectUri}|${predicateUri}|${uri}`;
-		const label = resolveLocalName(uri);
+		const label = this.nodeDescriptors.get(uri)?.nameOverride ?? resolveLocalName(uri);
 		const prefix = resolvePrefix(uri, this.namespacePrefixes);
 		const dimensions = measureNodeDimensions(label, prefix, type, false);
 

@@ -8,7 +8,8 @@ export function defaultGraphSettings(): GraphSettings {
 		hiddenNamespaces: [RDF_NS, RDFS_NS, OWL_NS],
 		hiddenEntityTypes: ["blank"],
 		hiddenPredicateUris: [],
-		hiddenInstanceOfUris: [OWL_NS + "Ontology"]
+		hiddenInstanceOfUris: [OWL_NS + "Ontology"],
+		nodeNamePredicate: ""
 	};
 }
 
@@ -28,6 +29,7 @@ export function makeSettingsHash(s: GraphSettings): string {
 		s.hiddenEntityTypes,
 		s.hiddenPredicateUris,
 		s.hiddenInstanceOfUris,
-		s.duplicateExternalNodes
+		s.duplicateExternalNodes,
+		s.nodeNamePredicate
 	]);
 }

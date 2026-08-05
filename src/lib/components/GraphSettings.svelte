@@ -16,6 +16,7 @@
 	let newNamespace = $state("");
 	let newPredicate = $state("");
 	let newClassUri = $state("");
+	let newNamePredicate = $state("");
 	let settings = $state(defaultGraphSettings());
 
 	const lockedMode = $derived(tabsStore.getActiveTab()?.locked ?? false);
@@ -39,7 +40,8 @@
 			hiddenNamespaces: [...s.hiddenNamespaces],
 			hiddenEntityTypes: [...s.hiddenEntityTypes],
 			hiddenPredicateUris: [...s.hiddenPredicateUris],
-			hiddenInstanceOfUris: [...s.hiddenInstanceOfUris]
+			hiddenInstanceOfUris: [...s.hiddenInstanceOfUris],
+			nodeNamePredicate: s.nodeNamePredicate
 		};
 	});
 
@@ -90,6 +92,16 @@
 
 	function removeInstanceOfUri(uri: string) {
 		update({ hiddenInstanceOfUris: settings.hiddenInstanceOfUris.filter((u) => u !== uri) });
+	}
+
+	function setNamePredicate() {
+		const val = resolvePrefixed(newNamePredicate.trim());
+		update({ nodeNamePredicate: val });
+		newNamePredicate = "";
+	}
+
+	function clearNamePredicate() {
+		update({ nodeNamePredicate: "" });
 	}
 
 	function resetDefaults() {
@@ -192,6 +204,47 @@
 				</div>
 			{/each}
 		</div>
+	</div>
+
+	<div class="mb-5 pb-4 border-b border-surface-0">
+		<h3 class="text-xs font-semibold text-subtext-0 uppercase tracking-wider mb-2">Custom Node Name Property</h3>
+		<p class="text-xs text-subtext-0 mb-2">
+			Nodes display the value of this property instead of their URI if set, otherwise they display URI as usual.
+		</p>
+		<div class="flex gap-2 mb-2">
+			<Input
+				type="text"
+				placeholder="rdfs:label"
+				bind:value={newNamePredicate}
+				class="text-text h-7.5"
+				disabled={lockedMode}
+				onkeydown={(e) => {
+					if (lockedMode) return;
+					if (e.key === "Enter") setNamePredicate();
+				}}
+			/>
+			<Button
+				size="sm"
+				variant="default"
+				class="text-xs bg-flamingo hover:bg-flamingo/80"
+				onclick={setNamePredicate}
+				disabled={lockedMode}>Set</Button
+			>
+		</div>
+		{#if settings.nodeNamePredicate}
+			<div class="flex flex-wrap gap-1.5">
+				<span class="inline-flex items-center gap-1 bg-surface-0 text-subtext-0 rounded px-2 py-0.5 text-xs">
+					<span title={settings.nodeNamePredicate}>{shortLabel(settings.nodeNamePredicate)}</span>
+					<button
+						class="enabled:hover:text-red enabled:cursor-pointer group"
+						disabled={lockedMode}
+						onclick={clearNamePredicate}
+					>
+						<X class="size-3 group-disabled:hidden" />
+					</button>
+				</span>
+			</div>
+		{/if}
 	</div>
 
 	<div class="mb-5 pb-4 border-b border-surface-0">
