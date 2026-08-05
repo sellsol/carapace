@@ -1,4 +1,4 @@
-import type { Quad } from "n3";
+import type { Quad, Token } from "n3";
 import { toast } from "svelte-sonner";
 
 import { SAMPLE_TURTLE } from "$lib/constants/sample";
@@ -196,17 +196,27 @@ class TabsStore {
 		this.activeTriples = result.triples;
 		tab.parsedPrefixMap = result.prefixMap;
 		this.activePrefixMap = result.prefixMap;
-		this.refreshLineMapping();
+
+		tab.lineMapping = result.lineMapping;
+		this.refreshLineMapping(result.tokens);
 	}
 
-	private refreshLineMapping() {
+	private refreshLineMapping(tokens?: Token[]) {
 		const tab = this.getActiveTab();
 		if (!tab || !tab.parsedTriples || tab.parsedTriples.length === 0) {
 			this.activeLineMapping = null;
 			return;
 		}
+
+		// migration: restores for older imported tabs
+		if (!(tab.lineMapping?.uriToLine instanceof Map) || !(tab.lineMapping?.lineToUris instanceof Map)) {
+			const result = parseTurtle(tab.ttlContent);
+			tab.lineMapping = result.lineMapping;
+			tokens = result.tokens;
+		}
+
 		try {
-			this.activeLineMapping = computeLineMapping(tab.ttlContent, tab.parsedPrefixMap ?? {});
+			this.activeLineMapping = computeLineMapping(tab.ttlContent, tab.parsedPrefixMap ?? {}, tab.lineMapping, tokens);
 		} catch {
 			this.activeLineMapping = null;
 		}
@@ -310,7 +320,7 @@ class TabsStore {
 		if (!tab) return { tabs: [] };
 
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { parsedTriples, ...rest } = tab;
+		const { parsedTriples, lineMapping, ...rest } = tab;
 		return { tabs: [rest as Tab] };
 	}
 

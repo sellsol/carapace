@@ -1,6 +1,7 @@
 import type { Quad } from "n3";
 
 import type { EntityType } from "$lib/types/graph";
+import type { LineMapping } from "$lib/utils/lines";
 
 export type GraphSettings = {
 	duplicateExternalNodes: boolean;
@@ -17,6 +18,7 @@ export type Tab = {
 	ttlContent: string;
 	parsedTriples?: Quad[];
 	parsedPrefixMap?: Record<string, string>;
+	lineMapping?: LineMapping;
 	settings: GraphSettings;
 	locked: boolean;
 	nodePositions?: Array<{ id: string; x: number; y: number; nodeType?: EntityType }>;

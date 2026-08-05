@@ -3,6 +3,7 @@ import type { Quad } from "n3";
 import type { Edge, EntityType, Node } from "$lib/types/graph";
 import type { GraphSettings } from "$lib/types/tabs";
 import { Builder } from "$lib/utils/builder";
+import type { LineMapping } from "$lib/utils/lines";
 import { Preprocessor } from "$lib/utils/preprocess";
 
 export function makeTriplesHash(t: Quad[]): string {
@@ -13,9 +14,10 @@ export function buildGraph(
 	triples: Quad[],
 	settings: GraphSettings,
 	existingNodes: Array<{ uri: string; x: number; y: number; nodeType?: EntityType }> = [],
-	namespacePrefixes: Record<string, string> = {}
+	namespacePrefixes: Record<string, string> = {},
+	lineMapping?: LineMapping
 ): { nodes: Node[]; edges: Edge[] } {
-	const preprocessor = new Preprocessor(settings);
+	const preprocessor = new Preprocessor(settings, lineMapping);
 	preprocessor.process(triples);
 
 	const cachedPositions = new Map<string, { x: number; y: number }[]>();

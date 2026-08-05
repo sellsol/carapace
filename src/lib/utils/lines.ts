@@ -8,9 +8,14 @@ export type LineMapping = {
 const DECLARATION_TYPES = new Set(["@prefix", "@base", "PREFIX", "BASE"]);
 const BLANK_START_TYPES = new Set(["blank", "[", "("]);
 
-export function computeLineMapping(content: string, prefixMap: Record<string, string>): LineMapping {
-	const uriToLine = new Map<string, number>();
-	const lineToUris = new Map<number, string[]>();
+export function computeLineMapping(
+	content: string,
+	prefixMap: Record<string, string>,
+	lineMapping?: LineMapping,
+	tokens?: Token[]
+): LineMapping {
+	const uriToLine = lineMapping?.uriToLine ?? new Map<string, number>();
+	const lineToUris = lineMapping?.lineToUris ?? new Map<number, string[]>();
 	const namespaceByPrefix = reversePrefixMap(prefixMap);
 
 	let subject: string | null = null;
@@ -38,7 +43,7 @@ export function computeLineMapping(content: string, prefixMap: Record<string, st
 		return "" + namespaceByPrefix.get(token.prefix ?? "") + token.value;
 	};
 
-	for (const token of new Lexer().tokenize(content)) {
+	for (const token of tokens ?? new Lexer().tokenize(content)) {
 		if (token.type === ";") {
 			predicate = null;
 		} else if (token.type === ".") {

@@ -21,6 +21,7 @@ export class Builder {
 	collectionDescriptors: CollectionDescriptor[];
 
 	edges: Edge[] = [];
+	keyToEdge = new Map<string, Edge>();
 	uriToNode = new Map<string, Node>();
 	nextNodeId = 0;
 
@@ -373,7 +374,8 @@ export class Builder {
 		const localName = resolveLocalName(predicateUri);
 		const fullName = prefix ? `${prefix}:${localName}` : localName;
 
-		const existingEdge = this.edges.find((e) => !e.collectionEdge && e.source === source && e.target === target);
+		const key = `${source.uri}\u0000${target.uri}`;
+		const existingEdge = this.keyToEdge.get(key);
 		if (existingEdge) {
 			existingEdge.label += `\n${fullName}`;
 			return;
@@ -387,6 +389,7 @@ export class Builder {
 			collectionEdge: false
 		};
 		this.edges.push(edge);
+		this.keyToEdge.set(key, edge);
 	}
 
 	private addCollectionEdge(source: Node, target: Node) {

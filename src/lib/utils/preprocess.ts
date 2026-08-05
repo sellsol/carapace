@@ -11,17 +11,20 @@ import {
 import type { CollectionDescriptor } from "$lib/types/processor";
 import { NodeDescriptor } from "$lib/types/processor";
 import type { GraphSettings } from "$lib/types/tabs";
+import type { LineMapping } from "$lib/utils/lines";
 import { classifyUriType } from "$lib/utils/ontology";
 import { inHiddenNamespace } from "$lib/utils/settings";
 
 export class Preprocessor {
 	settings: GraphSettings;
+	lineMapping?: LineMapping;
 
 	nodeDescriptors = new Map<string, NodeDescriptor>();
 	collectionDescriptors: CollectionDescriptor[] = [];
 
-	constructor(settings: GraphSettings) {
+	constructor(settings: GraphSettings, lineMapping?: LineMapping) {
 		this.settings = settings;
+		this.lineMapping = lineMapping;
 	}
 
 	process(triples: Quad[]) {
@@ -206,20 +209,49 @@ export class Preprocessor {
 		const fingerprintTally = new Map<string, number>();
 
 		for (const [uri, descriptor] of this.nodeDescriptors) {
+			let stableKey: string | null = null;
 			const match = labelledBlankUriPattern.exec(uri);
 			if (match) {
-				descriptor.stableKey = match[1];
+				stableKey = match[1];
 			} else if (labelledAnonUriPattern.test(uri)) {
 				const parts = (descriptor.fingerprintParts ?? []).sort();
 				const fingerprint = parts.join(";");
 
-				let stableKey = `anon-${this.hashString(fingerprint)}`;
+				stableKey = `anon-${this.hashString(fingerprint)}`;
 				const count = fingerprintTally.get(stableKey) ?? 0;
 				if (count > 0) stableKey = `${stableKey}-${count}`;
 				fingerprintTally.set(stableKey, count + 1);
-
-				descriptor.stableKey = stableKey;
 			}
+
+			if (stableKey) {
+				descriptor.stableKey = stableKey;
+				this.remapBlankUris(uri, stableKey);
+			}
+		}
+	}
+
+	private remapBlankUris(rawUri: string, stableKey: string) {
+		const mapping = this.lineMapping;
+		if (!mapping) return;
+
+		const line = mapping.uriToLine.get(rawUri);
+		if (line != null) {
+			mapping.uriToLine.delete(rawUri);
+			if (!mapping.uriToLine.has(stableKey)) {
+				mapping.uriToLine.set(stableKey, line);
+			}
+		}
+
+		for (const key of Array.from(mapping.uriToLine.keys())) {
+			if (key.startsWith(rawUri + "|")) {
+				mapping.uriToLine.set(stableKey + key.slice(rawUri.length), mapping.uriToLine.get(key)!);
+				mapping.uriToLine.delete(key);
+			}
+		}
+
+		for (const [uriLine, uris] of mapping.lineToUris) {
+			if (!uris.includes(rawUri)) continue;
+			mapping.lineToUris.set(uriLine, Array.from(new Set(uris.map((u) => (u === rawUri ? stableKey : u)))));
 		}
 	}
 
