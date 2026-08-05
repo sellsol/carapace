@@ -170,7 +170,7 @@
 		settings: GraphSettings,
 		nodePositions: Array<{ uri: string; x: number; y: number; nodeType?: EntityType }>
 	) {
-		const graph = buildGraph(triples, settings, nodePositions, prefixMap);
+		const graph = buildGraph(triples, settings, nodePositions, prefixMap, tabsStore.activeLineMapping ?? undefined);
 
 		nodes = graph.nodes;
 		edges = graph.edges;
