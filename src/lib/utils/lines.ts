@@ -1,5 +1,7 @@
 import { Lexer, type Token } from "n3";
 
+import { RDF_NS } from "$lib/constants/namespaces";
+
 export type LineMapping = {
 	uriToLine: Map<string, number>;
 	lineToUris: Map<number, string[]>;
@@ -23,6 +25,8 @@ export function computeLineMapping(
 	let inDeclaration = false;
 	let suppressSubject = false;
 
+	let currentBasePrefix = "";
+
 	const addToUri = (line: number, uri: string) => {
 		if (!uriToLine.has(uri)) uriToLine.set(uri, line);
 	};
@@ -39,11 +43,16 @@ export function computeLineMapping(
 	};
 
 	const resolveUri = (token: Token): string => {
-		if (token.type === "IRI") return token.value ?? "";
+		if (token.type === "IRI") {
+			const value = token.value ?? "";
+			return currentBasePrefix ? new URL(value, currentBasePrefix).href : value;
+		}
 		return "" + namespaceByPrefix.get(token.prefix ?? "") + token.value;
 	};
 
-	for (const token of tokens ?? new Lexer().tokenize(content)) {
+	const ts = tokens ?? Array.from(new Lexer().tokenize(content));
+	for (let i = 0; i < ts.length; i++) {
+		const token = ts[i];
 		if (token.type === ";") {
 			predicate = null;
 		} else if (token.type === ".") {
@@ -53,8 +62,13 @@ export function computeLineMapping(
 			suppressSubject = false;
 		} else if (DECLARATION_TYPES.has(token.type)) {
 			inDeclaration = true;
+			if (token.type === "@base" || token.type === "BASE") {
+				currentBasePrefix = ts[i + 1]?.value ?? "";
+			}
 		} else if (BLANK_START_TYPES.has(token.type) && !subject) {
 			suppressSubject = true;
+		} else if (token.type === "abbreviation" && token.value === "a") {
+			if (!suppressSubject && subject && !predicate) predicate = RDF_NS + "type";
 		} else if (token.type === "prefixed" || token.type === "IRI") {
 			if (inDeclaration) {
 				inDeclaration = false;
@@ -90,14 +104,5 @@ function reversePrefixMap(prefixMap: Record<string, string>): Map<string, string
 export function lineForNodeUri(uri: string | null, mapping: LineMapping | null): number | null {
 	if (!mapping || !uri) return null;
 
-	const direct = mapping.uriToLine.get(uri);
-	if (direct != null) return direct;
-
-	const firstSep = uri.indexOf("|");
-	if (firstSep === -1) return null;
-
-	const secondSep = uri.indexOf("|", firstSep + 1);
-	if (secondSep === -1) return null;
-
-	return mapping.uriToLine.get(uri.slice(secondSep + 1)) ?? null;
+	return mapping.uriToLine.get(uri) ?? null;
 }
