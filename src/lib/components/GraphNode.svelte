@@ -46,10 +46,10 @@
 	}
 
 	function handleMouseDown(event: MouseEvent) {
-		if (locked) return;
-
 		onDragStart(node, event);
 		if (event.ctrlKey || event.metaKey) event.preventDefault();
+		if (locked) return;
+
 		document.addEventListener("mousemove", handleMouseMove);
 		document.addEventListener("mouseup", handleMouseUp);
 	}
