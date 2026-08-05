@@ -74,10 +74,14 @@ class TabsStore {
 		}
 
 		this.activeTabId = id;
-		this.activeTriples = tab.parsedTriples ?? null;
-		this.activePrefixMap = tab.parsedPrefixMap ?? {};
-		this.activeError = "";
-		this.refreshLineMapping();
+		if (!tab.parsedTriples) {
+			this.doParse();
+		} else {
+			this.activeTriples = tab.parsedTriples ?? null;
+			this.activePrefixMap = tab.parsedPrefixMap ?? {};
+			this.activeError = "";
+			this.refreshLineMapping();
+		}
 
 		localStorage.setItem("carapace_activeTabId", id);
 		logger.debug("Tab Switched", { id: tab.id, name: tab.name });
@@ -107,10 +111,14 @@ class TabsStore {
 			const newTab = this.tabs[newIndex];
 
 			this.activeTabId = newTab.id;
-			this.activeTriples = newTab.parsedTriples ?? null;
-			this.activePrefixMap = newTab.parsedPrefixMap ?? {};
-			this.activeError = "";
-			this.refreshLineMapping();
+			if (!newTab.parsedTriples) {
+				this.doParse();
+			} else {
+				this.activeTriples = newTab.parsedTriples ?? null;
+				this.activePrefixMap = newTab.parsedPrefixMap ?? {};
+				this.activeError = "";
+				this.refreshLineMapping();
+			}
 			logger.debug("Tab Switched", { id: newTab.id, name: newTab.name });
 		}
 
@@ -216,7 +224,12 @@ class TabsStore {
 		}
 
 		try {
-			this.activeLineMapping = computeLineMapping(tab.ttlContent, tab.parsedPrefixMap ?? {}, tab.lineMapping, tokens);
+			this.activeLineMapping = computeLineMapping(
+				tab.ttlContent,
+				tab.parsedPrefixMap ?? {},
+				tab.lineMapping,
+				tokens
+			);
 		} catch {
 			this.activeLineMapping = null;
 		}
@@ -277,11 +290,7 @@ class TabsStore {
 			}
 
 			const activeTab = this.getActiveTab();
-			if (activeTab) {
-				this.activeTriples = activeTab.parsedTriples ?? null;
-				this.activePrefixMap = activeTab.parsedPrefixMap ?? {};
-			}
-			this.refreshLineMapping();
+			if (activeTab) this.doParse();
 			logger.info(`Tabs Loaded from Storage - ${this.tabs.length} Tabs`);
 		} catch (error) {
 			logger.error("Tabs Load from Storage:", error);
@@ -289,11 +298,23 @@ class TabsStore {
 	}
 
 	saveToStorage() {
-		const data = { tabs: this.tabs, activeTabId: this.activeTabId };
-		localStorage.setItem("carapace_tabs", JSON.stringify(data));
-		localStorage.setItem("carapace_activeTabId", this.activeTabId);
+		const data = {
+			tabs: this.tabs.map((tab) => {
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+				const { parsedTriples, lineMapping, ...rest } = tab;
+				return rest;
+			}),
+			activeTabId: this.activeTabId
+		};
 
-		logger.debug("Tabs Saved to Storage");
+		try {
+			localStorage.setItem("carapace_tabs", JSON.stringify(data));
+			localStorage.setItem("carapace_activeTabId", this.activeTabId);
+			logger.debug("Tabs Saved to Storage");
+		} catch (error) {
+			logger.error("Tabs Save to Storage:", error);
+			toast.error("Failed to save tabs to local storage");
+		}
 	}
 
 	scheduleSave() {
