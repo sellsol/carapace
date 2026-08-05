@@ -17,7 +17,12 @@ export function parseTurtle(content: string): {
 	let triples: Quad[] = [];
 	const prefixMap: Record<string, string> = {};
 	const lineMapping: LineMapping = { uriToLine: new Map(), lineToUris: new Map() };
-	const tokens = new Lexer().tokenize(content);
+	let tokens: Token[] = [];
+	try {
+		tokens = new Lexer().tokenize(content);
+	} catch (e) {
+		parseError = e instanceof Error ? e.message : "Invalid TTL";
+	}
 
 	logger.info("Parsing TTL To Triples");
 	const parser = makeLineMappingParser(tokens, lineMapping);
