@@ -230,10 +230,10 @@ export class Preprocessor {
 				const parts = (descriptor.fingerprintParts ?? []).sort();
 				const fingerprint = parts.join(";");
 
-				stableKey = `anon-${this.hashString(fingerprint)}`;
-				const count = fingerprintTally.get(stableKey) ?? 0;
-				if (count > 0) stableKey = `${stableKey}-${count}`;
-				fingerprintTally.set(stableKey, count + 1);
+				const baseKey = `anon-${this.hashString(fingerprint)}`;
+				const count = fingerprintTally.get(baseKey) ?? 0;
+				fingerprintTally.set(baseKey, count + 1);
+				stableKey = count === 0 ? baseKey : `${baseKey}-${count}`;
 			}
 
 			if (stableKey) {
