@@ -131,7 +131,7 @@ export class Builder {
 				if (this.settings.hiddenEntityTypes.includes(objectType)) continue;
 
 				let target: Node;
-				if (this.settings.duplicateExternalNodes && !objectDescriptor?.isLocal) {
+				if (this.settings.duplicateExternalNodes && !objectDescriptor?.isLocal && !objectDescriptor?.isSubject) {
 					target = this.addExternalNode(
 						quad.object.value,
 						objectType,
