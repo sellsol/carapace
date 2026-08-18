@@ -36,16 +36,25 @@ function buildExportSvg(
 	const maxX = Math.max(...dims.map((d) => d.x + d.w)) + padding;
 	const maxY = Math.max(...dims.map((d) => d.y + d.h)) + padding;
 
+	const rootEl = document.documentElement;
+	const wasDark = rootEl.classList.contains("dark");
+	if (wasDark) rootEl.classList.remove("dark");
+
 	const out = svgEl.cloneNode(true) as SVGSVGElement;
 	const originals = svgEl.querySelectorAll("*");
 	const clones = out.querySelectorAll("*");
-	clones.forEach((el, i) => {
-		const cs = getComputedStyle(originals[i]);
-		for (const prop of EXPORT_STYLE_PROPERTIES) {
-			const val = cs.getPropertyValue(prop);
-			if (val) (el as SVGElement).style.setProperty(prop, val);
-		}
-	});
+
+	try {
+		clones.forEach((el, i) => {
+			const cs = getComputedStyle(originals[i]);
+			for (const prop of EXPORT_STYLE_PROPERTIES) {
+				const val = cs.getPropertyValue(prop);
+				if (val) (el as SVGElement).style.setProperty(prop, val);
+			}
+		});
+	} finally {
+		if (wasDark) rootEl.classList.add("dark");
+	}
 
 	out.setAttribute("viewBox", `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
 	out.setAttribute("width", String(maxX - minX));
