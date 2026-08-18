@@ -20,7 +20,7 @@
 	import { tabsStore } from "$lib/stores/tabs.svelte";
 	import type { Edge, EntityType, Node } from "$lib/types/graph";
 	import type { GraphSettings } from "$lib/types/tabs";
-	import { exportSvg } from "$lib/utils/export";
+	import { exportRaster, exportSvg } from "$lib/utils/export";
 	import { buildGraph, makeTriplesHash } from "$lib/utils/graph";
 	import { defaultGraphSettings, makeSettingsHash } from "$lib/utils/settings";
 
@@ -487,7 +487,8 @@
 
 	onMount(() => {
 		currentTabId = tabsStore.activeTabId;
-		tabsStore.exportSvg = () => exportSvg(svgEl, nodes, transform);
+		tabsStore.exportGraph = (format) =>
+			format === "svg" ? exportSvg(svgEl, nodes, transform) : exportRaster(svgEl, nodes, transform, format);
 
 		const resizeObserver = new ResizeObserver((entries) => {
 			for (const entry of entries) {
@@ -513,7 +514,7 @@
 
 		savePositions();
 		tabsStore.flushSave();
-		tabsStore.exportSvg = null;
+		tabsStore.exportGraph = null;
 		tabsStore.selectedNodeUri = null;
 	});
 </script>

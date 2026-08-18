@@ -23,7 +23,7 @@ class TabsStore {
 	activeNodeCount = $state(0);
 	activeEdgeCount = $state(0);
 
-	exportSvg = $state<(() => void) | null>(null);
+	exportGraph = $state<((format: "svg" | "png" | "jpg") => void) | null>(null);
 
 	activeLineMapping = $state<LineMapping | null>(null);
 	editorCursorLine = $state(1);

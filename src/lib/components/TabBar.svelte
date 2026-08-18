@@ -98,8 +98,8 @@
 		logger.debug("Tab Exported (JSON)", { id: tab.id, name: tab.name });
 	}
 
-	function handleExportSvg() {
-		tabsStore.exportSvg?.();
+	function handleExport(format: "svg" | "png" | "jpg") {
+		tabsStore.exportGraph?.(format);
 	}
 
 	function readFileAsText(file: File): Promise<string> {
@@ -287,8 +287,14 @@
 				<Download class="h-4 w-4" />
 			</DropdownMenu.Trigger>
 			<DropdownMenu.Content class="w-40">
-				<DropdownMenu.Item onclick={handleExportSvg}>
+				<DropdownMenu.Item onclick={() => handleExport("svg")}>
 					<FileImage />Export SVG
+				</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => handleExport("png")}>
+					<FileImage />Export PNG
+				</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => handleExport("jpg")}>
+					<FileImage />Export JPG
 				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={handleExportTTL}>
 					<FileCode />Export TTL

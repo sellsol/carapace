@@ -2,7 +2,10 @@ import { EXPORT_STYLE_PROPERTIES } from "$lib/constants/visualisation";
 import type { Node } from "$lib/types/graph";
 
 export function downloadBlob(content: string, filename: string, mime: string): void {
-	const blob = new Blob([content], { type: mime });
+	downloadBlobObject(new Blob([content], { type: mime }), filename);
+}
+
+function downloadBlobObject(blob: Blob, filename: string): void {
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 
@@ -16,9 +19,11 @@ export function downloadBlob(content: string, filename: string, mime: string): v
 	URL.revokeObjectURL(url);
 }
 
-export function exportSvg(svgEl: SVGSVGElement, nodes: Node[], transform: { x: number; y: number; k: number }) {
-	if (!svgEl || nodes.length === 0) return;
-
+function buildExportSvg(
+	svgEl: SVGSVGElement,
+	nodes: Node[],
+	transform: { x: number; y: number; k: number }
+): { svg: string; width: number; height: number } {
 	const padding = 40;
 	const dims = nodes.map((n) => ({
 		x: n.x * transform.k + transform.x,
@@ -46,6 +51,56 @@ export function exportSvg(svgEl: SVGSVGElement, nodes: Node[], transform: { x: n
 	out.setAttribute("width", String(maxX - minX));
 	out.setAttribute("height", String(maxY - minY));
 
+	return {
+		svg: new XMLSerializer().serializeToString(out),
+		width: maxX - minX,
+		height: maxY - minY
+	};
+}
+
+export function exportSvg(svgEl: SVGSVGElement, nodes: Node[], transform: { x: number; y: number; k: number }) {
+	if (!svgEl || nodes.length === 0) return;
+
+	const { svg } = buildExportSvg(svgEl, nodes, transform);
 	const filename = `carapace_${new Date().toISOString().slice(0, 10)}.svg`;
-	downloadBlob(new XMLSerializer().serializeToString(out), filename, "image/svg+xml;charset=utf-8");
+	downloadBlob(svg, filename, "image/svg+xml;charset=utf-8");
+}
+
+export function exportRaster(
+	svgEl: SVGSVGElement,
+	nodes: Node[],
+	transform: { x: number; y: number; k: number },
+	mime: "png" | "jpg"
+) {
+	if (!svgEl || nodes.length === 0) return;
+
+	const { svg, width, height } = buildExportSvg(svgEl, nodes, transform);
+	const filename = `carapace_${new Date().toISOString().slice(0, 10)}.${mime}`;
+	const scale = 2;
+
+	const img = new Image();
+	img.onload = () => {
+		const canvas = document.createElement("canvas");
+		canvas.width = width * scale;
+		canvas.height = height * scale;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		// JPG doesn't support transparency, PNG does
+		if (mime === "jpg") {
+			ctx.fillStyle = "#ffffff";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+		}
+
+		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+		canvas.toBlob(
+			(blob) => {
+				if (!blob) return;
+				downloadBlobObject(blob, filename);
+			},
+			mime === "jpg" ? "image/jpeg" : "image/png",
+			0.92
+		);
+	};
+	img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
