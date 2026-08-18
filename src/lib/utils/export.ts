@@ -1,5 +1,18 @@
-import { EXPORT_STYLE_PROPERTIES } from "$lib/constants/visualisation";
+import { toast } from "svelte-sonner";
+
+import { EXPORT_STYLE_PROPERTIES, MAX_CANVAS_AREA, MAX_CANVAS_DIMENSION } from "$lib/constants/visualisation";
 import type { Node } from "$lib/types/graph";
+
+function getUsableScale(width: number, height: number, mime: "png" | "jpg"): number | null {
+	for (const scale of [2, 1]) {
+		const w = width * scale;
+		const h = height * scale;
+		if (w <= MAX_CANVAS_DIMENSION && h <= MAX_CANVAS_DIMENSION && w * h <= MAX_CANVAS_AREA) return scale;
+	}
+
+	toast.error(`Graph too large to export as ${mime.toUpperCase()}`);
+	return null;
+}
 
 export function downloadBlob(content: string, filename: string, mime: string): void {
 	downloadBlobObject(new Blob([content], { type: mime }), filename);
@@ -85,7 +98,8 @@ export function exportRaster(
 
 	const { svg, width, height } = buildExportSvg(svgEl, nodes, transform);
 	const filename = `carapace_${new Date().toISOString().slice(0, 10)}.${mime}`;
-	const scale = 2;
+	const scale = getUsableScale(width, height, mime);
+	if (!scale) return;
 
 	const img = new Image();
 	img.onload = () => {
@@ -93,7 +107,10 @@ export function exportRaster(
 		canvas.width = width * scale;
 		canvas.height = height * scale;
 		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
+		if (!ctx) {
+			toast.error(`Failed to render ${mime.toUpperCase()} export. Try different format`);
+			return;
+		}
 
 		// JPG doesn't support transparency, PNG does
 		if (mime === "jpg") {
@@ -104,12 +121,16 @@ export function exportRaster(
 		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 		canvas.toBlob(
 			(blob) => {
-				if (!blob) return;
+				if (!blob) {
+					toast.error(`Failed to render ${mime.toUpperCase()} export. Try different format`);
+					return;
+				}
 				downloadBlobObject(blob, filename);
 			},
 			mime === "jpg" ? "image/jpeg" : "image/png",
 			0.92
 		);
 	};
+	img.onerror = () => toast.error(`Failed to render ${mime.toUpperCase()} export. Try different format`);
 	img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }

@@ -52,3 +52,5 @@ export const EXPORT_STYLE_PROPERTIES = [
 	"stroke-linecap",
 	"filter"
 ];
+export const MAX_CANVAS_DIMENSION = 32767; // typical browser canvas limit
+export const MAX_CANVAS_AREA = 268435456; // chrome canvas area limit
