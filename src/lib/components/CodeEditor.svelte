@@ -85,19 +85,23 @@
 	}
 
 	onMount(() => {
+		const tabId = tabsStore.activeTabId;
+
 		const state = EditorState.create({
 			doc: value,
 			extensions: createExtensions()
 		});
-
 		editorView = new EditorView({
 			state,
 			parent: editorElement
 		});
 
-		tabsStore.editorCursorLine = editorView.state.doc.lineAt(editorView.state.selection.main.head).number;
+		scrollToLine(tabsStore.getActiveTab()?.editorCursorLine ?? 1);
 
 		return () => {
+			const tab = tabsStore.getTab(tabId);
+			if (tab) tab.editorCursorLine = tabsStore.editorCursorLine;
+
 			editorView.destroy();
 		};
 	});
@@ -109,6 +113,8 @@
 
 		const editorContent = editorView.state.doc.toString();
 		if (currentValue === editorContent) return;
+
+		const savedLine = tabsStore.getActiveTab()?.editorCursorLine ?? 1;
 
 		skipNextUpdate = true;
 		editorView.dispatch({
@@ -122,6 +128,8 @@
 		queueMicrotask(() => {
 			skipNextUpdate = false;
 		});
+
+		scrollToLine(savedLine);
 	});
 
 	$effect(() => {

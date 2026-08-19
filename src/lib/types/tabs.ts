@@ -15,12 +15,16 @@ export type GraphSettings = {
 export type Tab = {
 	id: string;
 	name: string;
+
 	ttlContent: string;
 	parsedTriples?: Quad[];
 	parsedPrefixMap?: Record<string, string>;
+	nodePositions?: Array<{ id: string; x: number; y: number; nodeType?: EntityType }>;
 	lineMapping?: LineMapping;
+
 	settings: GraphSettings;
 	locked: boolean;
-	nodePositions?: Array<{ id: string; x: number; y: number; nodeType?: EntityType }>;
+
 	camera?: { x: number; y: number; k: number };
+	editorCursorLine?: number;
 };
