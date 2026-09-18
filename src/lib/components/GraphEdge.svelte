@@ -4,9 +4,10 @@
 
 	interface Props {
 		edge: Edge;
+		highlighted?: boolean; // needed because it doesn't have selected like nodes
 	}
 
-	const { edge }: Props = $props();
+	const { edge, highlighted = false }: Props = $props();
 
 	const edgeGeo = $derived(edge.source.id === edge.target.id ? calcLoopGeo() : calcStraightGeo());
 	const edgeLabelPos = $derived(calcLabelPos());
@@ -98,8 +99,8 @@
 {#if edgeGeo.isSelfRef}
 	<path
 		d="M {edgeGeo.sx} {edgeGeo.sy} C {edgeGeo.cp1x} {edgeGeo.cp1y}, {edgeGeo.cp2x} {edgeGeo.cp2y}, {edgeGeo.ex} {edgeGeo.ey}"
-		class="stroke-overlay-1"
-		stroke-width="1.5"
+		class={highlighted ? "stroke-blue dark:stroke-lavender" : "stroke-overlay-1"}
+		stroke-width={highlighted ? 3 : 1.5}
 		fill="none"
 	/>
 {:else if edge.collectionEdge}
@@ -113,12 +114,19 @@
 		stroke-width="1.5"
 	/>
 {:else}
-	<line x1={edgeGeo.x1} y1={edgeGeo.y1} x2={edgeGeo.x2} y2={edgeGeo.y2} class="stroke-overlay-1" stroke-width="1.5" />
+	<line
+		x1={edgeGeo.x1}
+		y1={edgeGeo.y1}
+		x2={edgeGeo.x2}
+		y2={edgeGeo.y2}
+		class={highlighted ? "stroke-blue dark:stroke-lavender" : "stroke-overlay-1"}
+		stroke-width={highlighted ? 3 : 1.5}
+	/>
 {/if}
 
 <polygon
 	points="{edgeGeo.tipX},{edgeGeo.tipY} {edgeGeo.bx1},{edgeGeo.by1} {edgeGeo.bx2},{edgeGeo.by2}"
-	class={edge.collectionEdge ? "fill-mauve" : "fill-overlay-0"}
+	class={edge.collectionEdge ? "fill-mauve" : highlighted ? "fill-blue dark:fill-lavender" : "fill-overlay-0"}
 />
 
 {#if !edge.collectionEdge}

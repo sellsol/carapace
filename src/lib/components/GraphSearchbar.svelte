@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Node } from "$lib/types/graph";
+	import type { Edge, GraphSearchResult, Node } from "$lib/types/graph";
 
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
@@ -9,10 +9,11 @@
 
 	interface Props {
 		nodes: Node[];
+		edges: Edge[];
 		searchOpen: boolean;
-		onfocusNode: (node: Node) => void;
+		onfocusResult: (result: GraphSearchResult) => void;
 	}
-	let { nodes, searchOpen = $bindable(false), onfocusNode }: Props = $props();
+	let { nodes, edges, searchOpen = $bindable(false), onfocusResult }: Props = $props();
 
 	let inputEl: HTMLInputElement | null = $state(null);
 	let searchQuery = $state("");
@@ -22,21 +23,30 @@
 		if (!searchQuery.trim()) return [];
 
 		const q = searchQuery.toLowerCase();
-		return nodes.filter((n) => `${n.prefix ?? ""}:${n.label}`.toLowerCase().includes(q));
+
+		const nodeResults: GraphSearchResult[] = nodes
+			.filter((n) => `${n.prefix ?? ""}:${n.label}`.toLowerCase().includes(q))
+			.map((n) => ({ kind: "node", node: n }));
+
+		const edgeResults: GraphSearchResult[] = edges
+			.filter((e) => !e.collectionEdge && e.label.split("\n").some((p) => p.toLowerCase().includes(q)))
+			.map((e) => ({ kind: "edge", edge: e }));
+
+		return [...nodeResults, ...edgeResults];
 	});
 
 	function nextResult() {
 		if (searchResults.length === 0) return;
 
 		currentSearchIndex = (currentSearchIndex + 1) % searchResults.length;
-		onfocusNode(searchResults[currentSearchIndex]);
+		onfocusResult(searchResults[currentSearchIndex]);
 	}
 
 	function prevResult() {
 		if (searchResults.length === 0) return;
 
 		currentSearchIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
-		onfocusNode(searchResults[currentSearchIndex]);
+		onfocusResult(searchResults[currentSearchIndex]);
 	}
 
 	function handleSearchKeydown(event: KeyboardEvent) {
@@ -83,7 +93,7 @@
 			bind:ref={inputEl}
 			bind:value={searchQuery}
 			onkeydown={handleSearchKeydown}
-			placeholder="Search nodes…"
+			placeholder="Search"
 			class="w-36 h-5 text-xs px-1.5 focus-visible:border-surface0 focus-visible:ring-0"
 		/>
 		<Button

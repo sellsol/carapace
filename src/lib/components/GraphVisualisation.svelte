@@ -18,7 +18,7 @@
 	} from "$lib/constants/visualisation";
 	import { createLogger } from "$lib/logger";
 	import { tabsStore } from "$lib/stores/tabs.svelte";
-	import type { Edge, EntityType, Node } from "$lib/types/graph";
+	import type { Edge, EntityType, GraphSearchResult, Node } from "$lib/types/graph";
 	import type { GraphSettings } from "$lib/types/tabs";
 	import { exportRaster, exportSvg } from "$lib/utils/export";
 	import { buildGraph, makeTriplesHash } from "$lib/utils/graph";
@@ -68,6 +68,7 @@
 	let boxSelectArea = $state<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
 	let selectedNodeIds = $state<Set<string>>(new Set());
 	let selectedNodeStartPositions = $state<Map<string, { x: number; y: number }>>(new Map());
+	let highlightedEdgeId = $state<string | null>(null);
 
 	let searchOpen = $state(false);
 
@@ -296,16 +297,38 @@
 		searchOpen = !searchOpen;
 		if (!searchOpen) {
 			selectedNodeIds = new Set();
+			highlightedEdgeId = null;
 			containerEl?.focus({ preventScroll: true });
 		}
 	}
 
 	function focusNode(node: Node) {
+		highlightedEdgeId = null;
 		selectedNodeIds = new Set([node.id]);
 
 		if (transform.k < 0.5) transform.k = 0.5;
 		transform.x = width / 2 - (node.x + node.width / 2) * transform.k;
 		transform.y = height / 2 - (node.y + node.height / 2) * transform.k;
+	}
+
+	function focusEdge(edge: Edge) {
+		highlightedEdgeId = edge.id;
+		selectedNodeIds = new Set();
+
+		const cx = (edge.source.x + edge.source.width / 2 + edge.target.x + edge.target.width / 2) / 2;
+		const cy = (edge.source.y + edge.source.height / 2 + edge.target.y + edge.target.height / 2) / 2;
+
+		if (transform.k < 0.5) transform.k = 0.5;
+		transform.x = width / 2 - cx * transform.k;
+		transform.y = height / 2 - cy * transform.k;
+	}
+
+	function focusResult(result: GraphSearchResult) {
+		if (result.kind === "edge") {
+			focusEdge(result.edge);
+		} else {
+			focusNode(result.node);
+		}
 	}
 
 	export function focusGraphNode(uri: string): boolean {
@@ -558,7 +581,7 @@
 				/>
 			{/if}
 			{#each edges as edge (edge.id)}
-				<GraphEdge {edge} />
+				<GraphEdge {edge} highlighted={highlightedEdgeId === edge.id} />
 			{/each}
 
 			{#each nodes as node (node.id)}
@@ -574,7 +597,7 @@
 		</g>
 	</svg>
 
-	<GraphSearchbar {nodes} bind:searchOpen onfocusNode={focusNode} />
+	<GraphSearchbar {nodes} {edges} bind:searchOpen onfocusResult={focusResult} />
 
 	<div class="absolute bottom-4 right-4 flex gap-2">
 		<Button
@@ -582,7 +605,7 @@
 			size="sm"
 			class="h-6 w-6 {searchOpen ? 'bg-blue/40 dark:bg-lavender/40 dark:hover:bg-lavender/50 border-blue' : ''}"
 			onclick={toggleSearch}
-			aria-label="Search nodes"
+			aria-label="Search nodes and predicates"
 		>
 			<Search class="h-2.5 w-2.5" />
 		</Button>
