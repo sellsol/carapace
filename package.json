@@ -28,7 +28,8 @@
 		"codemirror-lang-turtle": "^0.0.2",
 		"d3-force": "^3.0.0",
 		"mode-watcher": "^1.1.0",
-		"n3": "^2.0.3"
+		"n3": "^2.0.3",
+		"rdfxml-streaming-parser": "^3.3.0"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

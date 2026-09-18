@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { toast } from "svelte-sonner";
 
+	import { BUILTIN_PREFIX_TO_NS } from "$lib/constants/namespaces";
 	import { createLogger } from "$lib/logger";
 	import { tabsStore } from "$lib/stores/tabs.svelte";
 	import { downloadBlob } from "$lib/utils/export";
+	import { rdfXmlToTurtle } from "$lib/utils/rdfxml";
 
 	import { Button } from "$lib/components/ui/button";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
@@ -128,6 +130,24 @@
 		input.value = "";
 	}
 
+	async function handleImportRdfXml(event: Event) {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+
+		try {
+			const content = await readFileAsText(file);
+			const turtle = await rdfXmlToTurtle(content, document.baseURI, BUILTIN_PREFIX_TO_NS);
+			const name = file.name.replace(/\.(rdf|xml|owl)$/i, "");
+			tabsStore.addTab(name, turtle);
+			logger.debug("RDF/XML File Imported", { name: file.name });
+		} catch (error) {
+			toast.error("Failed to import RDF/XML file");
+			logger.error("Import RDF/XML Failed", error);
+		}
+		input.value = "";
+	}
+
 	async function handleImportCarapace(event: Event) {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
@@ -176,6 +196,7 @@
 	}
 
 	let ttlFileInput: HTMLInputElement;
+	let rdfXmlFileInput: HTMLInputElement;
 	let carapaceFileInput: HTMLInputElement;
 </script>
 
@@ -273,6 +294,9 @@
 				<DropdownMenu.Item onclick={() => ttlFileInput?.click()}>
 					<FileCode />Import TTL
 				</DropdownMenu.Item>
+				<DropdownMenu.Item onclick={() => rdfXmlFileInput?.click()}>
+					<FileCode />Import RDF/XML
+				</DropdownMenu.Item>
 				<DropdownMenu.Item onclick={() => carapaceFileInput?.click()}>
 					<Turtle />Import Carapace
 				</DropdownMenu.Item>
@@ -308,4 +332,11 @@
 </div>
 
 <input bind:this={ttlFileInput} type="file" accept=".ttl,text/turtle" class="hidden" onchange={handleImportTtl} />
+<input
+	bind:this={rdfXmlFileInput}
+	type="file"
+	accept=".rdf,.xml,.owl,application/rdf+xml,text/xml,application/owl+xml"
+	class="hidden"
+	onchange={handleImportRdfXml}
+/>
 <input bind:this={carapaceFileInput} type="file" accept=".carapace" class="hidden" onchange={handleImportCarapace} />
