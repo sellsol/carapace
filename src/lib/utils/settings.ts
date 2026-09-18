@@ -9,7 +9,7 @@ export function defaultGraphSettings(): GraphSettings {
 		hiddenEntityTypes: ["blank"],
 		hiddenPredicateUris: [],
 		hiddenInstanceOfUris: [OWL_NS + "Ontology"],
-		nodeNamePredicate: ""
+		nodeNamePredicate: "http://www.w3.org/2000/01/rdf-schema#label"
 	};
 }
 
