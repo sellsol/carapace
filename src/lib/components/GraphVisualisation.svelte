@@ -4,6 +4,7 @@
 	import GraphSearchbar from "$lib/components/GraphSearchbar.svelte";
 	import type { Quad } from "n3";
 	import { onDestroy, onMount } from "svelte";
+	import { toast } from "svelte-sonner";
 
 	import {
 		CANVAS_HEIGHT,
@@ -160,11 +161,14 @@
 		nodes = newNodes;
 
 		const nodeMap = new Map(newNodes.map((n) => [n.id, n]));
-		edges = edges.map((e) => ({
-			...e,
-			source: nodeMap.get(e.source.id)!,
-			target: nodeMap.get(e.target.id)!
-		}));
+		edges = edges
+			.map((e) => {
+				const source = nodeMap.get(e.source.id);
+				const target = nodeMap.get(e.target.id);
+				if (!source || !target) return null;
+				return { ...e, source, target };
+			})
+			.filter((e): e is Edge => e !== null);
 	}
 
 	function rebuildGraph(
@@ -191,7 +195,12 @@
 		requestAnimationFrame(async () => {
 			if (gen !== loadGeneration) return;
 
-			await fn(gen);
+			try {
+				await fn(gen);
+			} catch (error) {
+				logger.error("Layout pipeline failed", error);
+				toast.error("Failed to layout graph");
+			}
 			if (gen !== loadGeneration) return;
 
 			tabsStore.graphLoading = false;

@@ -131,7 +131,11 @@ export class Builder {
 				if (this.settings.hiddenEntityTypes.includes(objectType)) continue;
 
 				let target: Node;
-				if (this.settings.duplicateExternalNodes && !objectDescriptor?.isLocal && !objectDescriptor?.isSubject) {
+				if (
+					this.settings.duplicateExternalNodes &&
+					!objectDescriptor?.isLocal &&
+					!objectDescriptor?.isSubject
+				) {
 					target = this.addExternalNode(
 						quad.object.value,
 						objectType,
@@ -285,6 +289,8 @@ export class Builder {
 	private addLiteralNode(value: string, subjectUri: string, predicateUri: string): Node {
 		const stableSubjectUri = this.resolveUriToStable(subjectUri);
 		const key = `${stableSubjectUri}|${predicateUri}|${value}`;
+		if (this.uriToNode.has(key)) return this.uriToNode.get(key)!;
+
 		const groupKey = `${stableSubjectUri}|${predicateUri}`;
 		const dimensions = measureNodeDimensions(value, null, "literal", false);
 
@@ -333,6 +339,8 @@ export class Builder {
 	private addExternalNode(uri: string, type: EntityType, subjectUri: string, predicateUri: string): Node {
 		const stableSubjectUri = this.resolveUriToStable(subjectUri);
 		const key = `${stableSubjectUri}|${predicateUri}|${uri}`;
+		if (this.uriToNode.has(key)) return this.uriToNode.get(key)!;
+
 		const label = this.nodeDescriptors.get(uri)?.nameOverride ?? resolveLocalName(uri);
 		const prefix = resolvePrefix(uri, this.namespacePrefixes);
 		const dimensions = measureNodeDimensions(label, prefix, type, false);
