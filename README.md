@@ -1,12 +1,11 @@
 <h1 align="center">
-  <br>
   <a href="https://carapace.space"><img src="./static/favicon.svg" alt="Carapace" width="200"></a>
   <br>
   Carapace
   <br>
 </h1>
 
-<h4 align="center">Turtle (TTL) ontology editor and graph visualiser.</h4>
+<p align="center"><strong>Turtle (TTL) ontology editor and graph visualiser.</strong></h2>
 
 **Carapace** is a text-first TTL graph visualiser. Easily import, export, navigate and edit TTL-based graphs through a native code editor, with live updates reflecting in the visualisation. Force graph computations are used to automatically spread out nodes, which can be manually arranged to your liking. The visualiser recognises [OWL (Web Ontology Language)](https://www.w3.org/OWL/) entity types, and also provides custom rendering for various concepts to improve readability.
 
